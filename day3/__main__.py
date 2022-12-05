@@ -1,3 +1,4 @@
+from os import path
 import unittest
 
 LOWERCASE_SHIFT = - ord("a") + 1
@@ -12,8 +13,16 @@ def find_item_in_line(line):
     for i in a:
         if i in b_set:
             return i
-    raise "Atleast one item expected"
+    raise BaseException("Atleast one item expected")
 
+def find_badge_in_group(group):
+    x, y, z = group
+    y = set(y)
+    z = set(z)
+    for c in x:
+        if c in y and c in z:
+            return c
+    raise BaseException("Atleast one item expected")
 
 def score_item(item):
     initial_value = ord(item)
@@ -24,21 +33,31 @@ def score_item(item):
 
 
 def score_lines(lines):
-    sum = 0
-    for line in lines:
-        item = find_item_in_line(line)
-        sum = sum + score_item(item)
-    return sum
+    return sum(score_item(find_item_in_line(l)) for l in lines)
 
+def score_groups(lines):
+    return sum(score_item(find_badge_in_group(c)) for c in chunks(lines, 3))
+
+def chunks(seq, size):
+    res = []
+    for element in seq:
+        res.append(element)
+        if len(res) == size:
+            yield res
+            res = []
+    if res:
+        yield res
 
 def read_lines(fname):
-    with open(fname) as file:
-        for s in file:
-            yield s
+    norm_file_name = path.join(path.dirname(__file__), fname)
+    with open(norm_file_name, "r", encoding="utf-8") as file:
+        for line in file:
+            yield line
 
 
 def score_file(fname):
-    return score_lines(read_lines(fname))
+    lines = list(read_lines(fname))
+    return (score_lines(lines), score_groups(lines))
 
 
 class TestDay(unittest.TestCase):
@@ -56,6 +75,26 @@ class TestDay(unittest.TestCase):
         )
         self.assertEqual(find_item_in_line("ttgJtRGJQctTZtZT"), "t")
         self.assertEqual(find_item_in_line("CrZsJsPPZsGzwwsLwLmpwMDw"), "s")
+
+    def test_find_badge_in_group(self):
+        group = [
+            "vJrwpWtwJgWrhcsFMMfFFhFp",
+            "jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL",
+            "PmmdzqPrVvPwwTWBwg"
+        ]
+        self.assertEqual(find_badge_in_group(group), "r")
+
+    def test_score_groups(self):
+        lines = [
+            "vJrwpWtwJgWrhcsFMMfFFhFp",
+            "jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL",
+            "PmmdzqPrVvPwwTWBwg",
+            "wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn",
+            "ttgJtRGJQctTZtZT",
+            "CrZsJsPPZsGzwwsLwLmpwMDw"
+        ]
+        self.assertEqual(score_groups(lines), 70)
+
 
     def test_score_item(self):
         self.assertEqual(score_item("p"), 16)
@@ -77,7 +116,7 @@ class TestDay(unittest.TestCase):
         self.assertEqual(score_lines(lines), 157)
 
     def test_score_file(self):
-        self.assertEqual(score_file("input-test.txt"), 157)
+        self.assertEqual(score_file("input-test.txt"), (157, 70))
 
 
 if __name__ == '__main__':
