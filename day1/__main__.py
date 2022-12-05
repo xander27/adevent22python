@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from functools import reduce
+from itertools import chain
 from os import path
 import unittest
 
@@ -11,7 +12,7 @@ class LimitedSortedList:
         self.limit = limit
         self.elements = []
 
-    def append(self, element): # TODO functional
+    def append(self, element):
         inserted = False
         for i, other in enumerate(self.elements):
             if element > other:
@@ -32,10 +33,9 @@ class State:
 
     def apply(self, element):
         if element is None:
-           self.top3.append(self.cur_sum) # TODO functional
-           return State(self.top3, 0)
-        else:
-            return State(self.top3, self.cur_sum + element)
+            self.top3.append(self.cur_sum)
+            return State(self.top3, 0)
+        return State(self.top3, self.cur_sum + element)
 
 
 def read_data(fname):
@@ -50,8 +50,9 @@ def read_data(fname):
 
 
 def solve(data):
-    result = reduce(lambda s, e: s.apply(e), data, State(LimitedSortedList(3), 0))
-    result = result.apply(None)
+    init = State(LimitedSortedList(3), 0)
+    elements = chain(data, [None])
+    result = reduce(lambda s, e: s.apply(e), elements, init)
     top3 = result.top3.elements
     return (top3[0], sum(top3))
 
