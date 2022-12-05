@@ -2,26 +2,26 @@ import unittest
 
 
 def read_data(fname):
-    with open(fname) as file:
-        for s in file:
-            s = s.rstrip()
-            if len(s) > 0:
-                yield int(s)
+    with open(fname, "r", encoding="utf-8") as file:
+        for line in file:
+            line = line.rstrip()
+            if len(line) > 0:
+                yield int(line)
             else:
                 yield None
 
 
 def solve(data):
-    max = 0
+    max_value = 0
     cur_sum = 0
     for x in data:
-        if x == None:
-            if cur_sum > max:
-                max = cur_sum
+        if x is None:
+            if cur_sum > max_value:
+                max_value = cur_sum
             cur_sum = 0
         else:
             cur_sum = cur_sum + x
-    return max
+    return max_value
 
 
 def solve_file(fname):
@@ -42,7 +42,6 @@ class TestDay(unittest.TestCase):
         data = [1000, 2000, 3000, None, 4000, None, 5000,
                 6000, None, 7000, 8000, 9000, None, 10000]
         self.assertEqual(solve(data), 24000)
-
 
     def test_solve_file(self):
         data = read_data("input-test.txt")
