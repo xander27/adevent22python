@@ -1,3 +1,4 @@
+from os import path
 from dataclasses import dataclass
 import unittest
 
@@ -7,15 +8,22 @@ class Range:
     begin: int
     end: int
 
-    def __include(self, other):
+    def include(self, other):
         return self.begin <= other.begin and self.end >= other.end
 
     def include_or_included_by(self, other):
-        return self.__include(other) or other.__include(self)
+        return self.include(other) or other.include(self)
 
+    def overlap(self, other):
+        if self.begin <= other.begin and self.end >= other.begin:
+            return True
+        if self.begin >= other.begin and self.begin <= other.end:
+            return True
+        return False
 
 def read_pairs(fname):
-    with open(fname) as file:
+    norm_file_name = path.join(path.dirname(__file__), fname)
+    with open(norm_file_name, "r", encoding="utf-8") as file:
         for s in file:
             yield line_to_pair(s)
 
@@ -31,7 +39,15 @@ def range_from_string(s):
 
 
 def score_file(fname):
-    return sum(1 for p in read_pairs(fname) if p[0].include_or_included_by(p[1]))
+    part_1 = 0
+    part_2 = 0
+    for pair in read_pairs(fname):
+        if pair[0].include_or_included_by(pair[1]):
+            part_1 += 1
+            part_2 += 1
+        elif pair[0].overlap(pair[1]):
+            part_2 += 1
+    return (part_1, part_2)
 
 
 class TestDay(unittest.TestCase):
@@ -52,9 +68,19 @@ class TestDay(unittest.TestCase):
         self.assert_include_or_included_by_both_ways(
             Range(2, 8), Range(3, 7), True)
 
+    def test_overlap(self):
+        self.assert_overlap_both_ways(Range(2, 4), Range(6, 8), False)
+        self.assert_overlap_both_ways(Range(2, 7), Range(7, 9), True)
+        self.assert_overlap_both_ways(Range(6, 6), Range(4, 6), True)
+        self.assert_overlap_both_ways(Range(2, 8), Range(3, 7), True)
+
     def assert_include_or_included_by_both_ways(self, a, b, expected):
         self.assertEqual(a.include_or_included_by(b), expected)
         self.assertEqual(b.include_or_included_by(a), expected)
+
+    def assert_overlap_both_ways(self, a, b, expected):
+        self.assertEqual(a.overlap(b), expected)
+        self.assertEqual(b.overlap(a), expected)
 
     def test_read_pairs(self):
         expected = [
@@ -68,7 +94,7 @@ class TestDay(unittest.TestCase):
         self.assertEqual(list(read_pairs("input-test.txt")), expected)
 
     def test_score_file(self):
-        self.assertEqual(score_file("input-test.txt"), 2)
+        self.assertEqual(score_file("input-test.txt"), (2, 4))
 
 
 if __name__ == '__main__':
