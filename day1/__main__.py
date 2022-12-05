@@ -1,4 +1,21 @@
+from dataclasses import dataclass
+from functools import reduce
 import unittest
+
+
+@dataclass
+class State:
+    max: int
+    cur_sum: int
+
+    def apply(self, element):
+        if element is None:
+            if self.cur_sum > self.max:
+                return State(self.cur_sum, 0)
+            else:
+                return State(self.max, 0)
+        else:
+            return State(self.max, self.cur_sum + element)
 
 
 def read_data(fname):
@@ -12,16 +29,9 @@ def read_data(fname):
 
 
 def solve(data):
-    max_value = 0
-    cur_sum = 0
-    for x in data:
-        if x is None:
-            if cur_sum > max_value:
-                max_value = cur_sum
-            cur_sum = 0
-        else:
-            cur_sum = cur_sum + x
-    return max_value
+    result = reduce(lambda s, e: s.apply(e), data, State(0, 0))
+    result = result.apply(None)
+    return result.max
 
 
 def solve_file(fname):
