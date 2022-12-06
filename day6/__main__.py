@@ -1,16 +1,17 @@
 from os import path
 import unittest
 
-WINDOW_SIZE = 4
+WINDOW_1 = 4
+WINDOW_2 = 14
 
 def windows(source, size):
     for i in range(len(source) - size + 1):
         begin, end = i,  i + size
         yield (begin, end, source[begin: end])
 
-def solve(string):
-    for _, end, window in windows(string, WINDOW_SIZE):
-        if len(set(window)) == WINDOW_SIZE:
+def solve(string, window_size):
+    for _, end, window in windows(string, window_size):
+        if len(set(window)) == window_size:
             return end
     raise BaseException("Start postion not found")
 
@@ -20,9 +21,9 @@ def read_string(fname):
         for line in file:
             return line
 
-def solve_file(fname):
+def solve_file(fname, window_size):
     string = read_string(fname)
-    return solve(string)
+    return solve(string, window_size)
 
 class TestDay(unittest.TestCase):
 
@@ -37,16 +38,23 @@ class TestDay(unittest.TestCase):
             (5,9,"5678"),
             (6,10,"6789")
         ]
-        self.assertEqual(list(windows(source, WINDOW_SIZE)), exepcted)
+        self.assertEqual(list(windows(source, WINDOW_1)), exepcted)
 
     def test_solve(self):
-        self.assertEqual(solve("bvwbjplbgvbhsrlpgdmjqwftvncz"), 5)
-        self.assertEqual(solve("nppdvjthqldpwncqszvftbrmjlhg"), 6)
-        self.assertEqual(solve("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg"), 10)
-        self.assertEqual(solve("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw"), 11)
+        self.assertEqual(solve("bvwbjplbgvbhsrlpgdmjqwftvncz", WINDOW_1), 5)
+        self.assertEqual(solve("nppdvjthqldpwncqszvftbrmjlhg", WINDOW_1), 6)
+        self.assertEqual(solve("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg", WINDOW_1), 10)
+        self.assertEqual(solve("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw", WINDOW_1), 11)
+
+        self.assertEqual(solve("mjqjpqmgbljsphdztnvjfqwrcgsmlb", WINDOW_2), 19)
+        self.assertEqual(solve("bvwbjplbgvbhsrlpgdmjqwftvncz", WINDOW_2), 23)
+        self.assertEqual(solve("nppdvjthqldpwncqszvftbrmjlhg", WINDOW_2), 23)
+        self.assertEqual(solve("nznrnfrfntjfmvfwmzdfjlvtqnbhcprsg", WINDOW_2), 29)
+        self.assertEqual(solve("zcfzfwzzqfrljwzlrfnpqdbhtmscgvjw", WINDOW_2), 26)
 
 if __name__ == '__main__':
-    print(solve_file("input.txt"))
+    print(solve_file("input.txt", WINDOW_1))
+    print(solve_file("input.txt", WINDOW_2))
     print("=====")
     unittest.main()
-
+    
