@@ -15,11 +15,11 @@ class File:
 @dataclass
 class Dir:
     name: str
-    children: set
+    _children: set
 
     def __init__(self, name, *varg) -> None:
         self.name = name
-        self.children = set(varg)
+        self._children = set(varg)
         self._size = -1
 
     def __hash__(self) -> int:
@@ -28,12 +28,15 @@ class Dir:
     def calculate_size(self):
         if self._size < 0:
             self._size = 0
-            for child in self.children:
-                if isinstance(child, File):
-                    self._size = self._size + child.size
-                else:
+            for child in self._children:
+                if isinstance(child, Dir):
                     self._size = self._size + child.calculate_size()
+                else:
+                    self._size = self._size + child.size
         return self._size
+
+    def add_child(self, child):
+        self._children.add(child)
 
 
 @dataclass
@@ -73,12 +76,12 @@ def parse(commands):
             cur_dir = dir_registry[path]
         elif parts[0] == "dir":
             path.append(parts[1])
-            cur_dir.children.add(dir_registry[path])
+            cur_dir.add_child(dir_registry[path])
             path.pop()
         else:
             size = int(parts[0])
             file = File(parts[1], size)
-            cur_dir.children.add(file)
+            cur_dir.add_child(file)
     return dir_registry.dirs
 
 
@@ -88,14 +91,39 @@ def read_lines(fname):
         for line in file:
             yield line
 
+
+def find_total_small(dirs):
+    total_small = 0
+    for cur_dir in dirs.values():
+        size = cur_dir.calculate_size()
+        if size <= 100000:
+            total_small = total_small + size
+    return total_small
+
+
+def find_smalest_to_delete(dirs):
+    total_space = 70000000
+    free_needed = 30000000
+    space_used = dirs["/"].calculate_size()
+    free_now = total_space - space_used
+    delete_needed = free_needed - free_now
+
+    min_to_delete = total_space
+    for cur_dir in dirs.values():
+        size = cur_dir.calculate_size()
+        if size < delete_needed:
+            continue
+        if size < min_to_delete:
+            min_to_delete = size
+
+    if min_to_delete == total_space:
+        raise BaseException("Can't find dicrectory to delete")
+    return min_to_delete
+
+
 def solve_file(fname):
     dirs = parse(read_lines(fname))
-    total = 0
-    for d in dirs.values():
-        size = d.calculate_size()
-        if size <= 100000:
-            total = total + size
-    return total
+    return (find_total_small(dirs), find_smalest_to_delete(dirs))
 
 
 class TestDay(unittest.TestCase):
@@ -105,11 +133,12 @@ class TestDay(unittest.TestCase):
         self.assertEqual(actual["/a/e"], Dir("/a/e", File("i", 584)))
 
     def test_calculate_size(self):
-        actual = Dir("/a", File("i", 100), Dir("/a/e", File("x", 10), File("y", 20))).calculate_size()
+        actual = Dir("/a", File("i", 100), Dir("/a/e",
+                     File("x", 10), File("y", 20))).calculate_size()
         self.assertEqual(actual, 130)
 
     def test_solve(self):
-        self.assertEqual(solve_file("input-test.txt"), 95437)
+        self.assertEqual(solve_file("input-test.txt"), (95437, 24933642))
 
 
 if __name__ == '__main__':
