@@ -5,8 +5,7 @@ import unittest
 def read_lines(fname):
     norm_file_name = path.join(path.dirname(__file__), fname)
     with open(norm_file_name, "r", encoding="utf-8") as file:
-        for line in file:
-            yield line.rstrip()
+        return [list(map(int, line.rstrip())) for line in file]
 
 
 def init_bool_map_by_size(rows, cols):
@@ -22,7 +21,7 @@ def init_bool_map_by_size(rows, cols):
     return result
 
 
-def solve(forest):
+def count_visible_from_outside(forest):
     rows = len(forest)
     cols = len(forest[0])
     bool_map = init_bool_map_by_size(rows, cols)
@@ -35,6 +34,10 @@ def solve(forest):
         fill_bool_col(forest, bool_map, col, 0, 1, rows, 1)
         fill_bool_col(forest, bool_map, col, rows - 1, rows - 2, -1, -1)
 
+    return count_bool_map(bool_map)
+
+
+def count_bool_map(bool_map):
     return sum((sum(row) for row in bool_map))
 
 
@@ -56,15 +59,72 @@ def fill_bool_col(forest, bool_map, col, first_pos, begin, end, delta):
             bool_map[i][col] = True
 
 
+def score_tree(forest, rows, cols,  row_index, col_index):
+    """There a lot of room for optimisation"""
+    row = forest[row_index]
+    cur_val = row[col_index]
+    rows = len(forest)
+    cols = len(row)
+
+    score = score_tree_in_row(row, cur_val, col_index + 1, cols, 1)
+    score = score * score_tree_in_row(row, cur_val, col_index - 1, -1, -1)
+    score = score * \
+        score_tree_in_col(forest, col_index, cur_val, row_index + 1, rows, 1)
+    score = score * \
+        score_tree_in_col(forest, col_index, cur_val, row_index - 1, -1, -1)
+
+    return score
+
+
+def score_tree_in_row(row, cur_val, begin, end, delta):
+    for i, col_index in enumerate(range(begin, end, delta)):
+        val = row[col_index]
+        if val >= cur_val:
+            return i + 1
+    else:
+        return i + 1
+
+
+def score_tree_in_col(forest, col_index, cur_val, begin, end, delta):
+    for i, row_index in enumerate(range(begin, end, delta)):
+        val = forest[row_index][col_index]
+        if val >= cur_val:
+            return i + 1
+    else:
+        return i + 1
+
+
+def max_score_tree(forest):
+    rows = len(forest)
+    cols = len(forest[0])
+    return max((score_tree(forest, rows, cols, r, c) for c in range(1, cols-1) for r in range(1, rows-1)))
+
+
 def solve_file(fname):
-    forest = list(read_lines(fname))
-    return solve(forest)
+    forest = read_lines(fname)
+    return (count_visible_from_outside(forest), max_score_tree(forest))
 
 
 class TestDay(unittest.TestCase):
 
-    def test_solve_file(self):
-        self.assertEqual(solve_file("input-test.txt"), 21)
+    FOREST = [
+        "30373",
+        "25512",
+        "65332",
+        "33549",
+        "35390",
+    ]
+
+    def test_count_visible_from_outside(self):
+        self.assertEqual(count_visible_from_outside(self.FOREST), 21)
+
+    def test_score_tree(self):
+        self.assertEqual(score_tree(self.FOREST, 5, 5, 1, 2), 4)
+        self.assertEqual(score_tree(self.FOREST, 5, 5, 3, 2), 8)
+
+    def test_max_score_tree(self):
+        self.assertEqual(max_score_tree(self.FOREST), 8)
+
 
 if __name__ == '__main__':
     print(solve_file("input.txt"))
