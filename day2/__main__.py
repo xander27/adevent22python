@@ -9,6 +9,7 @@ class Outcome(Enum):
     LOSE = ("X", 0)
 
     def __init__(self, code, points):
+        super().__init__()
         self.code = code
         self.points = points
 
