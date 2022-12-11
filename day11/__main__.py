@@ -6,7 +6,7 @@ import unittest
 
 @dataclass
 class Monkey():
-    items: set[int]
+    items: list[int]
     operation: str
     operation_arg: int
     divider: int
@@ -23,7 +23,7 @@ def remove_prefix(string, prefix):
 
 def parse_monkey(lines):
     items_str = remove_prefix(lines[1], "Starting items: ")
-    items = set(map(int, items_str.split(", ")))
+    items = list(map(int, items_str.split(", ")))
 
     operation_str = remove_prefix(lines[2], "Operation: new = old ")
     if operation_str == "* old":
@@ -64,10 +64,10 @@ class TestDay(unittest.TestCase):
 
     def test_read_monkeys(self):
         expected = [
-            Monkey(set([79, 98]), "*", 19, 23, 2, 3),
-            Monkey(set([54, 65, 75, 74]), "+", 6, 19, 2, 0),
-            Monkey(set([79, 60, 97]), "**", 2, 13, 1, 3),
-            Monkey(set([74]), "+", 3, 17, 0, 1),
+            Monkey([79, 98], "*", 19, 23, 2, 3),
+            Monkey([54, 65, 75, 74], "+", 6, 19, 2, 0),
+            Monkey([79, 60, 97], "**", 2, 13, 1, 3),
+            Monkey([74], "+", 3, 17, 0, 1),
         ]
         self.assertSequenceEqual(read_monkeys("input-test.txt"), expected)
 
