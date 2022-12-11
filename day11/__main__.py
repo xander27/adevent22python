@@ -4,7 +4,7 @@ from os import path
 import unittest
 
 CALM_FACTOR = 3
-ROUNDS_NUMBER = 20
+
 
 @dataclass
 class Monkey():
@@ -13,7 +13,7 @@ class Monkey():
     operation_arg: int
     divider: int
     true_path: int
-    false_path: int 
+    false_path: int
     inspects: int = 0
 
 
@@ -74,30 +74,40 @@ def apply_operation(value, operation, arg):
         raise BaseException(f"Unkown operation {operation} for arg {arg}")
 
 
-def calculate_new_value(value, operation, operation_arg):
-    return apply_operation(value, operation, operation_arg) // CALM_FACTOR
+def calculate_new_value(value, operation, operation_arg, relif):
+    value = apply_operation(value, operation, operation_arg)
+    if relif:
+        value = value // CALM_FACTOR
+    return value
 
 
-def simulate_round(monkeys):
+def simulate_round(monkeys, relif):
     for monkey in monkeys:
         items = monkey.items
         monkey.inspects = monkey.inspects + len(items)
         monkey.items = []
         for item in items:
-            value = calculate_new_value(item, monkey.operation, monkey.operation_arg)  
+            value = calculate_new_value(
+                item, monkey.operation, monkey.operation_arg, relif)
             going = monkey.true_path if value % monkey.divider == 0 else monkey.false_path
             monkeys[going].items.append(value)
 
-def business_level(monkeys):
-    for _ in range(ROUNDS_NUMBER):
-        simulate_round(monkeys)
+
+def business_level(monkeys, relif, rounds_number):
+    for i in range(rounds_number):
+        print(f"{i}/{rounds_number}")
+        simulate_round(monkeys, relif)
     all_inspects = map(lambda m: m.inspects, monkeys)
     top2 = sorted(all_inspects)[-2:]
     return top2[0] * top2[1]
 
+
 def score_file(fname):
     monkeys = read_monkeys(fname)
-    return business_level(monkeys)
+    return (
+        business_level(monkeys, True, 20),
+        business_level(monkeys, False, 10000),
+    )
 
 
 class TestDay(unittest.TestCase):
@@ -121,17 +131,19 @@ class TestDay(unittest.TestCase):
 
     def test_simulate_round(self):
         monkeys = self._get_inital_monkeys()
-        simulate_round(monkeys)
+        simulate_round(monkeys, True)
         self.assertSequenceEqual(monkeys[0].items, [20, 23, 27, 26])
-        self.assertSequenceEqual(monkeys[1].items, [2080, 25, 167, 207, 401, 1046])
+        self.assertSequenceEqual(
+            monkeys[1].items, [2080, 25, 167, 207, 401, 1046])
         self.assertSequenceEqual(monkeys[2].items, [])
         self.assertSequenceEqual(monkeys[3].items, [])
 
     def test_business_level(self):
-        self.assertEqual(business_level(self._get_inital_monkeys()), 10605)
+        self.assertEqual(business_level(
+            self._get_inital_monkeys(), True, 20), 10605)
 
     def test_score_file(self):
-        self.assertEqual(score_file("input-test.txt"), 10605)
+        self.assertEqual(score_file("input-test.txt"), (10605, 2713310158))
 
 
 if __name__ == '__main__':
