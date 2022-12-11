@@ -147,6 +147,6 @@ class TestDay(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    print(score_file("input.txt"))
+    # print(score_file("input.txt"))
     print("=====")
     unittest.main()
