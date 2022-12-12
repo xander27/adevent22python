@@ -60,27 +60,41 @@ def find_way(graph):
         complete.append([False] * graph.cols)
 
     distance[graph.start[0]][graph.start[1]] = 0
-    pointer = graph.start
-    return find_way_step(graph, distance, complete, pointer)
+    
+    todo = set([graph.start])
 
-def find_way_step(graph, distance, complete, pointer):
-    print(pointer)
-    cur_dist = distance[pointer[0]][pointer[1]]
-    if graph.end == pointer:
-        return cur_dist
-    to_go = find_points_to_go(pointer, graph, complete)
-    for other in to_go:
-        if distance[other[0]][other[1]] > cur_dist + 1:
-            distance[other[0]][other[1]] = cur_dist + 1
-    complete[pointer[0]][pointer[1]] = True
+    while len(todo) > 0:
+        pointer = pop_next(todo, distance, init_distance)
+        cur_dist = distance[pointer[0]][pointer[1]]
+        if graph.end == pointer:
+            for g in graph.heights:
+                print(g)
+            print("=====")
+            for d in distance:
+                print(d)
+            return cur_dist
+        to_go = find_points_to_go(pointer, graph, complete, distance)
+        for other in to_go:
+            if distance[other[0]][other[1]] > cur_dist + 1:
+                distance[other[0]][other[1]] = cur_dist + 1
+        complete[pointer[0]][pointer[1]] = True
+        todo.update(to_go)
+    
+    raise BaseException("Can't find the way")
 
-    for other in to_go:
-        result = find_way_step(graph, distance, complete, other)
-        if result is not None:
-            return result
-    return None
+def pop_next(todo, distance, init_distance):
+    min_distance = init_distance
+    result = None
+    for point in todo:
+        value = distance[point[0]][point[1]]
+        if value < min_distance:
+            min_distance = value
+            result = point
+    todo.remove(result)
+    return result
 
-def find_points_to_go(pointer, graph, complete):
+
+def find_points_to_go(pointer, graph, complete, distance):
     result = []
     for (i, j) in ((-1, 0), (1, 0), (0, -1), (0, 1)):
         candidate = (pointer[0] + i, pointer[1] + j)
@@ -93,6 +107,7 @@ def find_points_to_go(pointer, graph, complete):
         if not graph.can_go(pointer, candidate):
             continue
         result.append(candidate)
+    result.sort(key = lambda p: distance[p[0]][p[1]])
     return result
 
 
