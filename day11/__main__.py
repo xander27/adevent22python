@@ -71,12 +71,11 @@ def read_monkeys(fname):
 def apply_operation(value, operation, arg):
     if operation == "+":
         return value + arg
-    elif operation == "*":
+    if operation == "*":
         return value * arg
-    elif operation == "**" and arg == 2:
+    if operation == "**" and arg == 2:
         return value ** 2
-    else:
-        raise BaseException(f"Unkown operation {operation} for arg {arg}")
+    raise BaseException(f"Unkown operation {operation} for arg {arg}")
 
 
 def calculate_new_value(item, operation, arg, relif, base):
@@ -121,8 +120,6 @@ def score_file(fname):
 
 
 class TestDay(unittest.TestCase):
-
-    BASES = set([23, 19, 17, 13])
 
     def _get_inital(self):
         return [
