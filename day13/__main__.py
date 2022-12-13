@@ -3,9 +3,6 @@ import unittest
 import json
 
 
-def parse_pocket(string):
-    return json.loads(string)
-
 def in_order(a, b):
     result = is_valid_step(a, b)
     return result is None or result
@@ -43,18 +40,21 @@ def read_lines(fname):
     norm_file_name = path.join(path.dirname(__file__), fname)
     with open(norm_file_name, "r", encoding="utf-8") as file:
         for line in file:
-            yield line.rstrip()
+            yield line
 
 
 def read_data(fname):
     data = []
-    for line in read_lines(fname):
-        line = line.strip()
-        if len(line) == 0:
-            continue
-        pocket = parse_pocket(line)
-        data.append(pocket)
+    norm_file_name = path.join(path.dirname(__file__), fname)
+    with open(norm_file_name, "r", encoding="utf-8") as file:
+        for line in file:
+            line = line.strip()
+            if len(line) == 0:
+                continue
+            pocket = json.loads(line)
+            data.append(pocket)
     return data
+
 
 def find_decoder_key(data):
     first = [[2]]
@@ -78,24 +78,16 @@ def solve_file(fname):
 class TestDay(unittest.TestCase):
 
     DATA = [
-           [1, 1, 3, 1, 1], [1, 1, 5, 1, 1],
-           [[1], [2, 3, 4]], [[1], 4],
-           [9], [[8, 7, 6]],
-           [[4, 4], 4, 4], [[4, 4], 4, 4, 4],
-           [7, 7, 7, 7], [7, 7, 7],
-           [], [3],
-           [[[]]], [[]],
-           
-              [1, [2, [3, [4, [5, 6, 7]]]], 8, 9],
-              [1, [2, [3, [4, [5, 6, 0]]]], 8, 9]
-           
-        ]
-
-    def test_parse_pocket(self):
-        self.assertEqual(
-            parse_pocket("[1,[2,[3,[4,[5,6,0]]]],8,9]"),
-            [1, [2, [3, [4, [5, 6, 0]]]], 8, 9]
-        )
+        [1, 1, 3, 1, 1], [1, 1, 5, 1, 1],
+        [[1], [2, 3, 4]], [[1], 4],
+        [9], [[8, 7, 6]],
+        [[4, 4], 4, 4], [[4, 4], 4, 4, 4],
+        [7, 7, 7, 7], [7, 7, 7],
+        [], [3],
+        [[[]]], [[]],
+        [1, [2, [3, [4, [5, 6, 7]]]], 8, 9],
+        [1, [2, [3, [4, [5, 6, 0]]]], 8, 9]
+    ]
 
     def test_in_order(self):
         self.assertTrue(in_order(*self.DATA[0:2]))
