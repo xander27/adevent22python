@@ -15,8 +15,8 @@ class Map():
         self.max_x = max_x
         self.max_y = max_y
         self.data = []
-        for _ in range(max_x):
-            self.data.append(['.'] * max_y)
+        for _ in range(max_x + 1):
+            self.data.append(['.'] * (max_y+1))
 
     def __getitem__(self, key):
         return self.data[key[0]][key[1]]
@@ -30,11 +30,9 @@ class Map():
                 print(self.data[c][r], end="")
             print()
 
-def simulate_sand(map):
+def simulate_sand_falling(map):
     i = 0
     while True:
-        # map.draw(490)
-        # print("=====")
         if simulate_sand_path(map):
             return i
         i+=1
@@ -44,7 +42,7 @@ def simulate_sand_path(map):
     while True:   
         if point is None:
             return False
-        if point[1] >= map.max_y - 1:
+        if point[1] == map.max_y:
             return True
         point = similate_sand_move(map, point[0], point[1])
 
@@ -82,7 +80,7 @@ def init_empty_map(commands):
                 max_x = point[0]
             if point[1] > max_y:
                 max_y = point[1]
-    return Map(max_x + 1, max_y + 1)
+    return Map(max_x, max_y + 2)
 
 
 def draw_line(map, p1, p2):
@@ -116,7 +114,7 @@ def init_map(commands):
 def score_file(fname):
     commands = read_commands(fname)
     map = init_map(commands)
-    return simulate_sand(map)
+    return simulate_sand_falling(map)
 
 
 class TestDay(unittest.TestCase):
@@ -131,7 +129,7 @@ class TestDay(unittest.TestCase):
 
     def test_simulate_sand(self):
         map = init_map(self.COMMANDS)
-        self.assertEqual(simulate_sand(map), 24)
+        self.assertEqual(simulate_sand_falling(map), 24)
 
 
 if __name__ == '__main__':
