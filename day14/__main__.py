@@ -37,6 +37,15 @@ def simulate_sand_falling(map):
             return i
         i+=1
 
+def simulate_sand_on_floor(map):
+    i = 1
+    while True:
+        simulate_sand_path(map)
+        if map[START] == 'O':
+            return i
+        i += 1
+
+
 def simulate_sand_path(map):
     point = START
     while True:   
@@ -72,15 +81,8 @@ def read_commands(fname):
 
 
 def init_empty_map(commands):
-    max_x = 0
-    max_y = 0
-    for command in commands:
-        for point in command:
-            if point[0] > max_x:
-                max_x = point[0]
-            if point[1] > max_y:
-                max_y = point[1]
-    return Map(max_x, max_y + 2)
+    max_y = max(max(p[1] for p in command) for command in commands)
+    return Map(1000, max_y + 2)
 
 
 def draw_line(map, p1, p2):
@@ -105,16 +107,20 @@ def apply_commands(map, commands):
             draw_line(map, p1, p2)
 
 
-def init_map(commands):
+def init_map(commands, floor):
     map = init_empty_map(commands)
     apply_commands(map, commands)
+    if floor:
+        draw_line(map, (0, map.max_y), (map.max_x, map.max_y))
     return map
 
 
 def score_file(fname):
     commands = read_commands(fname)
-    map = init_map(commands)
-    return simulate_sand_falling(map)
+    return (
+        simulate_sand_falling(init_map(commands, False)),
+        simulate_sand_on_floor(init_map(commands, True)),
+    )
 
 
 class TestDay(unittest.TestCase):
@@ -127,9 +133,13 @@ class TestDay(unittest.TestCase):
     def test_read_commands(self):
         self.assertEqual(read_commands("input-test.txt"), self.COMMANDS)
 
-    def test_simulate_sand(self):
-        map = init_map(self.COMMANDS)
+    def test_simulate_sand_falling(self):
+        map = init_map(self.COMMANDS, False)
         self.assertEqual(simulate_sand_falling(map), 24)
+
+    def test_simulate_sand_on_floor(self):
+        map = init_map(self.COMMANDS, True)
+        self.assertEqual(simulate_sand_on_floor(map), 93)
 
 
 if __name__ == '__main__':
