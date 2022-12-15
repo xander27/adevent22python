@@ -72,21 +72,41 @@ def append_range(others, new_range):
             others.append(new_range)
             return others
 
-
-def count_points_in_line(sensors, y):
+def get_ranges_from_line(sensors, y, max_coord=None):
     ranges = []
     for sensor in sensors:
         y_distance = abs(sensor.own_y - y)
         max_x_distnace = sensor.distance - y_distance
         if max_x_distnace >= 0:
-            new_range = Range(sensor.own_x - max_x_distnace,
-                              sensor.own_x + max_x_distnace)
+            begin = sensor.own_x - max_x_distnace
+            end = sensor.own_x + max_x_distnace
+            if max_coord is not None:
+                begin = max(0, begin)
+                end = min(max_coord, end)
+                if end <= begin:
+                    continue
+            new_range = Range(begin, end)
             append_range(ranges, new_range)
+            if max_coord is not None:
+                if len(ranges) == 1 and ranges[0].begin == 0 and ranges[0].end == max_coord:
+                    break
+    return ranges
+
+def count_points_in_line(sensors, y):
+    ranges = get_ranges_from_line(sensors, y)
     return sum(r.end - r.begin for r in ranges)
 
-def solve_file(fname, y):
+def find_freq(sensors, max_coord):
+    for y in range(max_coord + 1):
+        ranges = get_ranges_from_line(sensors, y, max_coord)
+        if len(ranges) == 2:
+            ranges.sort(key=lambda r: r.begin)
+            return (ranges[0].end + 1) * 4000000 + y
+
+
+def solve_file(fname, y, max_coord):
     sensors = read_sensors(fname)
-    return count_points_in_line(sensors, y)
+    return count_points_in_line(sensors, y), find_freq(sensors, max_coord)
 
 
 class TestDay(unittest.TestCase):
@@ -124,9 +144,12 @@ class TestDay(unittest.TestCase):
         self.assertEqual(count_points_in_line(self.SENSORS, 10), 26)
 
     def test_solve_file(self):
-        self.assertEqual(solve_file("input-test.txt", 10), 26)
+        self.assertEqual(solve_file("input-test.txt", 10, 20), (26, 56000011))
+
+    def test_find_freq(self):
+        self.assertEqual(find_freq(self.SENSORS, 20), 56000011)
 
 
 if __name__ == '__main__':
-    print(solve_file("input.txt", 2000000))
+    print(solve_file("input.txt", 2000000, 4000000))
     unittest.main()
