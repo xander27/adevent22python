@@ -10,7 +10,7 @@ PARSING_EXP = "Valve ([A-Z]{2}) has flow rate=([0-9]+); tunnels? leads? to valve
 class Valve():
     name: str
     flow: int
-    children: dict[str,int]
+    children: dict[str, int]
 
     def __init__(self, name, flow, *children):
         self.name = name
@@ -26,50 +26,151 @@ def parse_valve(string):
         *list(map(lambda s: s.strip(), match.group(3).split(",")))
     )
 
-def find_way(valves, time):
-    not_broken = 0
-    for valve in valves.values():
-        if valve.flow > 0:
-            not_broken += 1
-    return step(
-        valves = valves,
-        cur = "AA",
-        time = time - 1,
-        flow = 0,
-        open = set(),
-        not_broken=not_broken,
-        shortest=dict()
+
+def find_way_1(valves):
+    return step_1(
+        valves=valves,
+        cur="AA",
+        time=29,
+        flow=0,
+        open=set([v.name for v in valves.values() if v.flow == 0]),
+        best={}
     )
 
 
-def step(valves, cur, time, flow, open, not_broken, shortest):
+def add_to_set(s, x):
+    copy = s.copy()
+    copy.add(x)
+    return copy
+
+
+@dataclass
+class Option():
+    name: str
+    opened: str
+
+
+def get_options(valves, cur, open):
+    result = []
+    valve = valves[cur]
+    if cur not in open and valve.flow > 0:
+        # new_flow = flow + valve.flow * time
+        result.append(Option(cur, cur))
+
+    for child in valve.children:
+        result.append(Option(child, None))
+    return result
+
+
+def step_1(valves, cur, time, flow, open, best):
     if time == 0:
         return flow
-    if len(open) == not_broken:
+    if len(open) == len(valves):
         return flow
 
     key = cur + ">" + ":".join(sorted(open))
-    if key in shortest and shortest[key] > time:
+    if key in best and best[key] > time:
         return -1
-    shortest[key] = time
+    best[key] = time
 
     m = 0
-    valve = valves[cur]
-    if cur not in open and valve.flow > 0:
-        new_open = open.copy()
-        new_open.add(cur)
-        new_flow = flow + valve.flow * time
-        result = step(valves, cur, time - 1, new_flow, new_open, not_broken, shortest)
-        if result > m: 
-            m = result
+    options = get_options(valves, cur, open)
+    for option in options:
+        if option.name in open and len(valves[option.name].children) == 1:
+            continue
+        new_flow = flow 
+        new_open = open
+        if option.opened is not None:
+            new_flow += valves[option.opened].flow * time
+            new_open = open.copy()
+            new_open.add(option.opened)
+        result = step_1(valves, option.name, time - 1, new_flow, new_open, best)
+        m = result if result > m else m
 
-
-    for child in valve.children:
-        result = step(valves, child, time-1, flow, open, not_broken, shortest)
-        if result > m: 
-            m = result
-   
     return m
+
+def find_way_2(valves):
+    return step_2(
+        valves=valves,
+        cur_a="AA",
+        cur_b="AA",
+        pred_a="",
+        pred_b="",
+        time=25,
+        flow=0,
+        open=set([v.name for v in valves.values() if v.flow == 0]),
+        best={}
+    )
+
+def test_option(valves, open, cur, path):
+    if cur not in open:
+        return True
+    for child in valves[cur].children:
+        if child in path:
+            continue
+        if test_option(valves, open, child, add_to_set(path, child)):
+            return True
+    return False
+
+def step_2(valves, cur_a, cur_b, pred_a, pred_b, time, flow, open, best):
+    if time == 0:
+        return flow
+    if len(open) == len(valves):
+        # if time > best['all']:
+        #     best['all'] = time
+        return flow
+
+    key = ":".join(sorted([cur_a, cur_b])) + ">" + ":".join(sorted(open))
+    if key in best and best[key] >= time:
+        # print(key)
+        return -1
+    best[key] = time
+
+
+    options_a = get_options(valves, cur_a, open)
+    options_b = get_options(valves, cur_b, open)
+
+    m = 0
+    for option_a in options_a:
+        if pred_a == option_a.name: 
+            continue
+        valve_a = valves[option_a.name]
+        if (option_a.name in open or valve_a.flow == 0) and len(valve_a.children) == 1:
+            continue
+        # if not test_option(valves, open, option_a.name, set(cur_a)):
+        #     continue
+        for option_b in options_b:
+            if pred_b == option_b.name: 
+                continue
+            if option_a.opened is not None and option_a.opened == option_b.opened:
+                continue
+            valve_b = valves[option_b.name]
+            if (option_b.name in open or valve_b.flow == 0) and len(valve_b.children) == 1:
+                continue
+            # if not test_option(valves, open, option_b.name, set(cur_b)):
+            #     continue
+            # print(cur_a, option_a, cur_b, option_b)
+            opened = [option.opened for option in [option_a, option_b] if option.opened is not None]
+            new_flow = flow 
+            new_open = open.copy()
+            for o in opened:
+                new_flow += valves[o].flow * time
+                new_open.add(o)
+            result = step_2(
+                valves, 
+                option_a.name, 
+                option_b.name, 
+                cur_a,
+                cur_b,
+                time - 1, 
+                new_flow, 
+                new_open, 
+                best
+            )
+            m = result if result > m else m
+
+    return m
+
 
 
 def read_valves(fname):
@@ -81,9 +182,10 @@ def read_valves(fname):
             result[valve.name] = valve
     return result
 
+
 def solve_file(fname):
     valves = read_valves(fname)
-    return find_way(valves, 30)
+    return find_way_2(valves)
 
 
 class TestDay(unittest.TestCase):
@@ -108,13 +210,16 @@ class TestDay(unittest.TestCase):
     def test_read_valves(self):
         self.assertEqual(read_valves("input-test.txt"), self.VAVLES)
 
-    def test_find_way(self):
-        self.assertEqual(find_way(self.VAVLES, 30), 1651)
+    def test_find_way_1(self):
+        self.assertEqual(find_way_1(self.VAVLES), 1651)
 
-    def test_solve_file(self):
-        self.assertEqual(solve_file("input-test.txt"), 1651)
+    def test_find_way_2(self):
+        self.assertEqual(find_way_2(self.VAVLES), 1707)
+
+    # def test_solve_file(self):
+    #     self.assertEqual(solve_file("input-test.txt"), 1651)
 
 
 if __name__ == '__main__':
-    print(solve_file("input.txt"))
+    # print(solve_file("input.txt"))
     unittest.main()
