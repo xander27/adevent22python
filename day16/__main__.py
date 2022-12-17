@@ -26,48 +26,46 @@ def parse_valve(string):
         *list(map(lambda s: s.strip(), match.group(3).split(",")))
     )
 
-def find_way(valves):
+def find_way(valves, time):
     not_broken = 0
     for valve in valves.values():
         if valve.flow > 0:
             not_broken += 1
     return step(
         valves = valves,
-        cur = valves["AA"],
-        time = 29,
+        cur = "AA",
+        time = time - 1,
         flow = 0,
         open = set(),
         not_broken=not_broken,
-        shortest=dict(),
-        path = []
+        shortest=dict()
     )
 
 
-def step(valves, cur, time, flow, open, not_broken, shortest, path):
+def step(valves, cur, time, flow, open, not_broken, shortest):
     if time == 0:
         return flow
     if len(open) == not_broken:
         return flow
 
-    key = cur.name + ">" + ":".join(sorted(open))
+    key = cur + ">" + ":".join(sorted(open))
     if key in shortest and shortest[key] > time:
         return -1
     shortest[key] = time
 
     m = 0
-    if cur.name not in open and cur.flow > 0:
+    valve = valves[cur]
+    if cur not in open and valve.flow > 0:
         new_open = open.copy()
-        new_open.add(cur.name)
-        new_path = path.copy()
-        new_path.append((cur.name, time))
-        new_flow = flow + cur.flow * time
-        result = step(valves, cur, time - 1, new_flow, new_open, not_broken, shortest, new_path)
+        new_open.add(cur)
+        new_flow = flow + valve.flow * time
+        result = step(valves, cur, time - 1, new_flow, new_open, not_broken, shortest)
         if result > m: 
             m = result
 
-    for child_name in cur.children:
-        child = valves[child_name]
-        result = step(valves, child, time-1, flow, open, not_broken, shortest, path)
+
+    for child in valve.children:
+        result = step(valves, child, time-1, flow, open, not_broken, shortest)
         if result > m: 
             m = result
    
@@ -85,7 +83,7 @@ def read_valves(fname):
 
 def solve_file(fname):
     valves = read_valves(fname)
-    return find_way(valves)
+    return find_way(valves, 30)
 
 
 class TestDay(unittest.TestCase):
@@ -111,7 +109,7 @@ class TestDay(unittest.TestCase):
         self.assertEqual(read_valves("input-test.txt"), self.VAVLES)
 
     def test_find_way(self):
-        self.assertEqual(find_way(self.VAVLES), 1651)
+        self.assertEqual(find_way(self.VAVLES, 30), 1651)
 
     def test_solve_file(self):
         self.assertEqual(solve_file("input-test.txt"), 1651)
