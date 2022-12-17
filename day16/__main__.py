@@ -1,4 +1,4 @@
-# inspired by https://github.com/juanplopes/advent-of-code-2022/blob/main/day16.py
+# based on https://github.com/juanplopes/advent-of-code-2022/blob/main/day16.py
 
 from os import path
 import re
@@ -18,42 +18,43 @@ def read_valves(fname):
             result[name] = (flow, children)
     return result
 
+def build_connections(valves):
+    max_value = len(valves) + 1
+    result = {}
+    for name, valve in valves.items():
+        result[name] = {v: 1 if v in valve[1] else max_value for v in valves}
+    for k in valves.keys():
+        for i in valves.keys():
+            for j in valves.keys():
+                result[i][j] = min(result[i][j], result[i][k]+result[k][j])
+    return result
+
+def build_indecies(names):
+    return { name: 1 << i for i, name in enumerate(names) }
+
+
+def visit(connections, indecies, valves_with_flow, cur, time, state, flow, best):
+    best[state] = max(best.get(state, 0), flow)
+    for other, valve in valves_with_flow.items():
+        new_time = time - connections[cur][other] - 1
+        new_state = indecies[other] | state
+        if new_time <= 0 or new_state == state:
+            continue
+        new_flow = flow + new_time * valve[0]
+        visit(connections, indecies, valves_with_flow, other, new_time, new_state, new_flow, best)
+    return best
 
 def solve_file(fname):
     valves = read_valves(fname)
-    indecies, connections = {}, {}
+    connections = build_connections(valves)
+    valves_with_flow = {n: v for n, v in valves.items() if v[0] > 0}
+    indecies = build_indecies(valves_with_flow.keys())
 
-    i = 0
-    valves_with_flow = {}
-    for name, valve in valves.items():
-        connections[name] = {v: 1 if v in valve[1]
-                             else float('+inf') for v in valves.keys()}
-        if valve[0] > 0:
-            valves_with_flow[name] = valve
-            indecies[name] = 1 << i
-            i += 1
+    p1 = max(visit(connections, indecies, valves_with_flow,"AA", 30, 0, 0, {}).values())
+    best = visit(connections, indecies, valves_with_flow,'AA', 26, 0, 0, {})
 
-    for k in connections:
-        for i in connections:
-            for j in connections:
-                connections[i][j] = min(
-                    connections[i][j], connections[i][k]+connections[k][j])
-
-    def visit(cur, time, state, flow, best):
-        best[state] = max(best.get(state, 0), flow)
-        for next, valve in valves_with_flow.items():
-            new_time = time - connections[cur][next] - 1
-            new_state = indecies[next] | state
-            if new_time <= 0 or new_state == state:
-                continue
-            new_flow = flow + new_time * valve[0]
-            visit(next, new_time, new_state, new_flow, best)
-        return best
-
-    p1 = max(visit("AA", 30, 0, 0, {}).values())
-    best = visit('AA', 26, 0, 0, {})
-    p2 = max(v1+v2 for k1, v1 in best.items()
-             for k2, v2 in best.items() if not k1 & k2)
+    # find two best solutions which do not open same valves
+    p2 = max(v1+v2 for k1, v1 in best.items() for k2, v2 in best.items() if not k1 & k2)
     return p1, p2
 
 
