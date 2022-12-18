@@ -1,31 +1,6 @@
 
-from dataclasses import dataclass
 from os import path
 import unittest
-
-
-# @dataclass
-# class Point:
-#     x: int
-#     y: int
-#     z: int
-#     connected: set[tuple[int, int, int]]
-
-#     def __init__(self, x, y, z):
-#         self.x = x
-#         self.y = y
-#         self.z = z
-#         self.connected = set()
-
-#     def possible_connections(self):
-#         return set([
-#             (self.x - 1, self.y, self.z),
-#             (self.x + 1, self.y, self.z),
-#             (self.x, self.y - 1, self.z),
-#             (self.x, self.y + 1, self.z),
-#             (self.x, self.y, self.z - 1),
-#             (self.x, self.y, self.z + 1),
-#         ])
 
 def parse_point(string):
     coords = [int(s) for s in string.split(",")]
