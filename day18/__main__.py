@@ -58,7 +58,8 @@ def visit(start, marked, points, maxs):
         stack.extend(get_neighbors(cur))
 
 
-def get_surrounded(points, maxs):
+def get_surrounded(points):
+    maxs = [max(p[i] for p in points) for i in range(3)]
     marked = set()
     visit((0, 0, 0), marked, points, maxs)
     result = []
@@ -72,13 +73,8 @@ def get_surrounded(points, maxs):
     return result
 
 
-def get_maxs(points):
-    return [max(p[i] for p in points) for i in range(3)]
-
-
 def count_in_surface(points):
-    maxs = get_maxs(points)
-    surrounded = get_surrounded(points, maxs)
+    surrounded = get_surrounded(points)
     return count_out_surface(surrounded)
 
 
@@ -129,8 +125,7 @@ class TestDay(unittest.TestCase):
         self.assertEqual(solve_file("input-test.txt"), (64, 58))
 
     def test_is_surrounded(self):
-        maxs = get_maxs(self.POINTS)
-        actual = get_surrounded(self.POINTS, maxs)
+        actual = get_surrounded(self.POINTS)
         self.assertEqual(actual, [(2, 2, 5)])
 
 
