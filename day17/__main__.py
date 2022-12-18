@@ -70,7 +70,8 @@ class Game():
             self.data.append(self.EMPTY_LINE.copy())
 
         while True:
-            wind = self._wind_pattern[self._wind_postition % len(self._wind_pattern)]
+            wind_postition = self._wind_postition % len(self._wind_pattern)
+            wind = self._wind_pattern[wind_postition]
             self._wind_postition += 1
             offset = 1 if wind == ">" else -1
             if self._can_move(figure, figure_left, figure_bottom, offset):
@@ -80,8 +81,8 @@ class Game():
             else:
                 break
         self._add_figure(figure, figure_left, figure_bottom)
-        self.top_poistion = max(
-            self.top_poistion, figure_bottom + figure.height)
+        self.top_poistion = max(self.top_poistion, figure_bottom + figure.height)
+        return (wind_postition, self.top_poistion)
 
     def _add_figure(self, figure, left, bottom):
         for col in range(figure.width):
@@ -123,10 +124,31 @@ class Game():
 def solve(wind_pattern, turns):
     game = Game(wind_pattern)
     figures = Figure.all()
-    for i in range(turns):
-         game.add(figures[i % len(figures)])
-    # print(game)
-    return game.top_poistion
+    cycle_canidates = []
+    for _ in range(len(Figure)):
+        cycle_canidates.append({})
+    turn = 0
+    top_by_cycle = 0
+    cycle_processed = False
+    while turn < turns:
+        figure_index = turn % len(figures)
+        wind_pos, top_pos = game.add(figures[figure_index])
+        if cycle_processed or turn < len(figures) * len(wind_pattern):
+            turn += 1
+            continue
+        prev_turn, prev_top_pos = cycle_canidates[figure_index].get(wind_pos, (None, None))
+        if prev_turn is not None:
+            turn_diff = turn - prev_turn
+            top_diff = top_pos - prev_top_pos
+            cycles = (turns - turn) // turn_diff
+            top_by_cycle = top_diff * cycles
+            turn += cycles * turn_diff
+            cycle_processed = True
+        else:
+            cycle_canidates[figure_index][wind_pos] = (turn, top_pos)
+        turn += 1
+        
+    return game.top_poistion + top_by_cycle
 
 def solve_file(fname, turns):
     norm_file_name = path.join(path.dirname(__file__), fname)
@@ -162,14 +184,14 @@ class TestDay(unittest.TestCase):
 
     def test_solve(self):
         self.assertEqual(solve(self.WIND_PATTERN, 2022), 3068)
-        # self.assertEqual(solve(self.WIND_PATTERN, 1000000000000), 1000000000000)
+        self.assertEqual(solve(self.WIND_PATTERN, 1000000000000), 1514285714288)
 
     def test_solve_file(self):
         self.assertEqual(solve_file("input-test.txt", 2022), 3068)
-        # self.assertEqual(solve_file("input-test.txt", 1000000000000), 1000000000000)
+        self.assertEqual(solve_file("input-test.txt", 1000000000000), 1514285714288)
 
 
 if __name__ == '__main__':
     print(solve_file("input.txt", 2022))
-    # print(solve_file("input.txt", 1000000000000))
+    print(solve_file("input.txt", 1000000000000))
     unittest.main()
