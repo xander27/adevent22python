@@ -53,13 +53,14 @@ def get_best_possible(state, time):
 
 def visit(state, time, blueprint, memory):
     # print(state, time)
+    # TODO check if better state exists for this time
     val = state.stash[Element.GEODE]
     if time <= 0:
         return val
     if val > memory['best']:
         memory['best'] = val
-    # elif get_best_possible(state, time) < memory['best']:
-    #     return -1
+    elif get_best_possible(state, time) < memory['best']:
+        return -1
     
     prev = memory.get(state, -1)
     if prev >= time:
@@ -109,7 +110,11 @@ def read_blueprints(fname):
 
 def solve_file(fname):
     blueprints = [parse_blueprint(l) for l in read_lines(fname)]
-    return sum(score_blueprint(b) * (i+1) for i, b in enumerate(blueprints))
+    total = 0
+    for i, b in enumerate(blueprints):
+        print(i)
+        total += score_blueprint(b) * (i+1) 
+    return total
 
 class TestDay(unittest.TestCase):
 
@@ -139,4 +144,5 @@ class TestDay(unittest.TestCase):
         self.assertEqual(solve_file("input-test.txt"), 33)
 
 if __name__ == '__main__':
+    print(solve_file("input.txt")) # 1150
     unittest.main()
