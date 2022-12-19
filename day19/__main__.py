@@ -1,4 +1,5 @@
 
+from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum, IntEnum
 from os import path
@@ -39,6 +40,24 @@ class State():
     def __hash__(self):
         return hash((self.robots, self.stash))
 
+    def is_better(self, other):
+        better, worse = False, False
+
+        for a, b in zip(self.robots, other.robots):
+            if a > b:
+                better = True
+            elif a < b:
+                worse = True
+
+        for a, b in zip(self.stash, other.stash):
+            if a > b:
+                better = True
+            elif a < b:
+                worse = True
+
+        if better == worse:
+            return None
+        return better
 
 ROBOTS = 0
 STASH = 1
@@ -50,38 +69,62 @@ def get_best_possible(state, time):
     prog_sum = time * (time + 1) // 2
     return state.stash[Element.GEODE] * 2 + prog_sum
 
+def get_max_robots(blueprint):
+    maxs = [0, 0, 0, 999]
+    for robot in blueprint:
+        for i, cost in enumerate(robot):
+            if cost > maxs[i]: 
+                maxs[i] = cost
+    return maxs
 
-def visit(state, time, blueprint, memory):
-    # print(state, time)
-    # TODO check if better state exists for this time
+def visit(state, time, blueprint, by_state, by_time, max_robots):
     val = state.stash[Element.GEODE]
     if time <= 0:
         return val
-    if val > memory['best']:
-        memory['best'] = val
-    elif get_best_possible(state, time) < memory['best']:
+    if val > by_state['best']:
+        by_state['best'] = val
+    elif get_best_possible(state, time) < by_state['best']:
         return -1
-    
-    prev = memory.get(state, -1)
+    prev = by_state.get(state, -1)
     if prev >= time:
         return -1
-    memory[state] = time
+
+    same_time = by_time[time]
+    if state in same_time:
+        return -1
+    to_replace = []
+    for other in same_time:
+        better = state.is_better(other)
+        if better is None:
+            continue
+        if better:
+            to_replace.append(other)
+        else:
+            return -1
+    same_time.add(state)
+    same_time.remove
+    for other in to_replace:
+        same_time.remove(other)
+
+    by_state[state] = time
     new_time = time-1
     options = []
 
     for element in range(3, -1, -1):
+        if state.robots[element] >= max_robots[element]:
+            continue
         new_state = state.turn(element, blueprint[element])
         if new_state is not None:
             options.append(new_state)
     if len(options) < len(Element):
         options.append(state.turn())
-    result = max(visit(o, new_time, blueprint, memory) for o in options)
+    result = max(visit(o, new_time, blueprint, by_state, by_time, max_robots) for o in options)
 
     return result
 
 
-def score_blueprint(blueprint):
-    return visit(INITIAL_STATE, 24, blueprint, {'best': 0})
+def score_blueprint(blueprint, turns):
+    return visit(INITIAL_STATE, turns, blueprint, {'best': 0}, defaultdict(set), get_max_robots(blueprint))
 
 
 def parse_cost(line, element):
@@ -94,11 +137,6 @@ def parse_blueprint(line):
     parts = line.split(".")[:len(Element)]
     return [[parse_cost(part, element) for element in Element] for part in parts]
 
-
-def parse_blueprints(lines):
-    return [parse_blueprint(lines[i:i+4]) for i in range(1, len(lines), 6)]
-
-
 def read_lines(fname):
     norm_file_name = path.join(path.dirname(__file__), fname)
     with open(norm_file_name, "r", encoding="utf-8") as file:
@@ -108,12 +146,13 @@ def read_lines(fname):
 def read_blueprints(fname):
     return [parse_blueprint(l) for l in read_lines(fname)]
 
-def solve_file(fname):
+def solve_file(fname, turns, blueprints_limit):
     blueprints = [parse_blueprint(l) for l in read_lines(fname)]
+    blueprints = blueprints[:blueprints_limit]
     total = 0
     for i, b in enumerate(blueprints):
         print(i)
-        total += score_blueprint(b) * (i+1) 
+        total += score_blueprint(b, turns) * (i+1) 
     return total
 
 class TestDay(unittest.TestCase):
@@ -133,6 +172,20 @@ class TestDay(unittest.TestCase):
         ],
     ]
 
+    def test_is_better(self):
+        this = State((1,1,1,1), (1,1,1,1))
+        self.assertTrue(this.is_better(State((1,1,1,0), (1,1,1,1))))
+        self.assertTrue(this.is_better(State((1,1,1,1), (1,1,1,0))))
+        self.assertTrue(this.is_better(State((1,1,0,1), (1,1,1,0))))
+
+        self.assertFalse(this.is_better(State((2,1,1,1), (1,1,1,1))))
+        self.assertFalse(this.is_better(State((1,1,1,1), (2,1,1,1))))
+        self.assertFalse(this.is_better(State((1,2,1,1), (1,2,1,1))))
+
+        self.assertIsNone(this.is_better(State((2,1,1,1), (0,1,1,1))))
+        self.assertIsNone(this.is_better(State((1,1,1,0), (2,1,1,1))))
+        self.assertIsNone(this.is_better(State((1,2,1,0), (1,2,1,1))))
+
     def test_parse_blueprint(self):
         lines = "Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian."
         self.assertEqual(parse_blueprint(lines), self.BLUEPRINTS[0])
@@ -141,8 +194,13 @@ class TestDay(unittest.TestCase):
         self.assertEqual(read_blueprints("input-test.txt"), self.BLUEPRINTS)
 
     def test_solve_file(self):
-        self.assertEqual(solve_file("input-test.txt"), 33)
+        # self.assertEqual(solve_file("input-test.txt", 24, 999), 33)
+        self.assertEqual(solve_file("input-test.txt", 32, 3), 62)
+
+    def test_get_max_robots(self):
+        self.assertEqual(get_max_robots(self.BLUEPRINTS[0]), [4, 14, 7, 999])
+        self.assertEqual(get_max_robots(self.BLUEPRINTS[1]), [3, 8, 12, 999])
 
 if __name__ == '__main__':
-    print(solve_file("input.txt")) # 1150
+    # print(solve_file("input.txt")) # 1150
     unittest.main()
