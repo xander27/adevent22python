@@ -1,7 +1,8 @@
 
 from collections import defaultdict
 from dataclasses import dataclass
-from enum import Enum, IntEnum
+from enum import IntEnum
+from functools import reduce
 from os import path
 import re
 import unittest
@@ -19,6 +20,8 @@ class State():
     robots: tuple[int, int, int, int]
     stash: tuple[int, int, int, int]
 
+    MAX_RES = 100
+
     def turn(self, robot_type=None, cost=None):
         if robot_type is None:
             after_work = tuple(x + self.robots[i]
@@ -31,7 +34,7 @@ class State():
         updated_stash = tuple(x - cost[i] for i, x in enumerate(self.stash))
         can_add = all(map(lambda x: x >= 0, updated_stash))
         if can_add:
-            after_work = tuple(x + self.robots[i]
+            after_work = tuple(min(x + self.robots[i], self.MAX_RES)
                                for i, x in enumerate(updated_stash))
             new_robots = tuple(r + 1 if i == robot_type else r for i, r in enumerate(self.robots))
             return State(new_robots, after_work)
@@ -59,8 +62,6 @@ class State():
             return None
         return better
 
-ROBOTS = 0
-STASH = 1
 
 INITIAL_STATE = State((1, 0, 0, 0), (0, 0, 0, 0))
 
@@ -76,6 +77,24 @@ def get_max_robots(blueprint):
             if cost > maxs[i]: 
                 maxs[i] = cost
     return maxs
+
+def get_options(state, blueprint, time, max_robots):
+    new_state = state.turn(Element.GEODE, blueprint[Element.GEODE])
+    if new_state is not None:
+        return [new_state]
+
+    options = []
+    for element in range(2, -1, -1):
+        if time < 2 and element < 2:
+            continue
+        if state.robots[element] >= max_robots[element]:
+            continue
+        new_state = state.turn(element, blueprint[element])
+        if new_state is not None:
+            options.append(new_state)
+    options.append(state.turn())
+    return options
+    
 
 def visit(state, time, blueprint, by_state, by_time, max_robots):
     val = state.stash[Element.GEODE]
@@ -110,18 +129,10 @@ def visit(state, time, blueprint, by_state, by_time, max_robots):
     new_time = time-1
     options = []
 
-    for element in range(3, -1, -1):
-        if state.robots[element] >= max_robots[element]:
-            continue
-        new_state = state.turn(element, blueprint[element])
-        if new_state is not None:
-            options.append(new_state)
-    if len(options) < len(Element):
-        options.append(state.turn())
+    options = get_options(state, blueprint, time, max_robots)
     result = max(visit(o, new_time, blueprint, by_state, by_time, max_robots) for o in options)
 
     return result
-
 
 def score_blueprint(blueprint, turns):
     return visit(INITIAL_STATE, turns, blueprint, {'best': 0}, defaultdict(set), get_max_robots(blueprint))
@@ -146,14 +157,15 @@ def read_lines(fname):
 def read_blueprints(fname):
     return [parse_blueprint(l) for l in read_lines(fname)]
 
-def solve_file(fname, turns, blueprints_limit):
+def solve_file_p1(fname):
     blueprints = [parse_blueprint(l) for l in read_lines(fname)]
-    blueprints = blueprints[:blueprints_limit]
-    total = 0
-    for i, b in enumerate(blueprints):
-        print(i)
-        total += score_blueprint(b, turns) * (i+1) 
-    return total
+    return sum(score_blueprint(b, 24) * (i+1) for i, b in enumerate(blueprints))
+
+def solve_file_p2(fname):
+    blueprints = [parse_blueprint(l) for l in read_lines(fname)]
+    blueprints = blueprints[:3]
+    return reduce(lambda a, b: a*b, (score_blueprint(b, 32) for b in blueprints))
+
 
 class TestDay(unittest.TestCase):
 
@@ -194,13 +206,13 @@ class TestDay(unittest.TestCase):
         self.assertEqual(read_blueprints("input-test.txt"), self.BLUEPRINTS)
 
     def test_solve_file(self):
-        # self.assertEqual(solve_file("input-test.txt", 24, 999), 33)
-        self.assertEqual(solve_file("input-test.txt", 32, 3), 62)
+        self.assertEqual(solve_file_p1("input-test.txt"), 33)
 
     def test_get_max_robots(self):
         self.assertEqual(get_max_robots(self.BLUEPRINTS[0]), [4, 14, 7, 999])
         self.assertEqual(get_max_robots(self.BLUEPRINTS[1]), [3, 8, 12, 999])
 
 if __name__ == '__main__':
-    # print(solve_file("input.txt")) # 1150
+    #print(solve_file_p1("input.txt")) # 1150
+    print(solve_file_p2("input.txt")) # - 37367
     unittest.main()
