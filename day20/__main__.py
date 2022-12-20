@@ -12,13 +12,6 @@ def read_numbers(fname):
     with open(norm_file_name, "r", encoding="utf-8") as file:
         return list(map(int, file.read().split("\n")))
 
-def positions_to_list(original, positions):
-    result = [0] * len(positions)
-    for i, n in enumerate(original):
-        p = positions[i]
-        result[p] = n
-    return result
-
 def reoder(numbers, times):
     length = len(numbers)
     original_by_index = list(enumerate(numbers))
