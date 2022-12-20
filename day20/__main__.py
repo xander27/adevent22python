@@ -29,11 +29,7 @@ def reoder(numbers, times):
 def solve(numbers, mult, times):
     numbers = list(map(lambda x: x * mult, numbers))
     numbers = reoder(numbers, times)
-    p0 = -1
-    for i, n in enumerate(numbers):
-        if n == 0:
-            p0 = i
-            break
+    p0 = numbers.index(0)
     positions = [ (i * 1000 + p0) % len(numbers) for i in range(1, 4) ]
     return sum(numbers[p] for p in positions)
 
