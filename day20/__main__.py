@@ -18,34 +18,25 @@ def positions_to_list(original, positions):
 
 def reoder(numbers):
     length = len(numbers)
-    positions = { i: i for i in range(length) }
-    for i, number in enumerate(numbers):
-        if number == 0: 
-            continue
-        cur_pos = positions[i]
-        new_pos = cur_pos + number
-        if number < 0:
-            new_pos -= 1
-        if new_pos > length:
-            new_pos += 1
-        new_pos = new_pos % length
-        if new_pos > cur_pos:
-            positions = { n: p - 1 if p > cur_pos and p <= new_pos else p for n, p in positions.items() }
-        else:
-            positions = { n: p + 1 if p < cur_pos and p >= new_pos else p for n, p in positions.items() }
-        positions[i] = new_pos
-        # print(positions_to_list(numbers, positions))
-        # print(list(enumerate(positions_to_list(positions))))
-    return positions_to_list(numbers, positions), positions
+    with_index = list(enumerate(numbers))
+    result = with_index.copy()
+    for n in with_index:
+        current_pos = result.index(n)
+        new_pos = (current_pos + n[1]) % (length - 1)
+        if new_pos == 0:
+            new_pos = length
+        del result[current_pos]
+        result.insert(new_pos, n)
+    return list(map(lambda p: p[1], result))
     
 def solve(numbers):
-    reordered, positions = reoder(numbers)
+    reordered = reoder(numbers)
     p0 = -1
     for i, n in enumerate(reordered):
         if n == 0:
             p0 = i
             break
-    positions = [ (i * 1000 + p0) % len(positions) for i in range(1, 4) ]
+    positions = [ (i * 1000 + p0) % len(reordered) for i in range(1, 4) ]
     return sum(reordered[p] for p in positions)
 
 def solve_file(fname):
@@ -57,7 +48,7 @@ class TestDay(unittest.TestCase):
     NUMBERS = [1, 2, -3, 3, -2, 0, 4]
 
     def test_reorder(self):
-        self.assertSequenceEqual(reoder(self.NUMBERS)[0], [1, 2, -3, 4, 0, 3, -2])
+        self.assertSequenceEqual(reoder(self.NUMBERS), [1, 2, -3, 4, 0, 3, -2])
 
     def test_sovlve(self):
         self.assertEqual(solve(self.NUMBERS), 3)
@@ -65,26 +56,3 @@ class TestDay(unittest.TestCase):
 if __name__ == '__main__':
     print(solve_file("input.txt"))
     unittest.main()
-
-
-[1, 2, -3, 3, -2, 0, 4] # 1, 2, -3, 3, -2, 0, 4 +
-[2, 1, -3, 3, -2, 0, 4] # 2, 1, -3, 3, -2, 0, 4 # 1 moves between 2 and -3: +
-[1, -3, 2, 3, -2, 0, 4] # 1, -3, 2, 3, -2, 0, 4 # 2 moves between -3 and 3: +
-[1, 2, 3, -2, -3, 0, 4] # 1, 2, 3, -2, -3, 0, 4 # -3 moves between -2 and 0 + 
-[1, 2, -2, -3, 0, 3, 4] # 1, 2, -2, -3, 0, 3, 4 # 3 moves between 0 and 4:
-[1, 2, -3, 0, 3, 4, -2] # 1, 2, -3, 0, 3, 4, -2 # -2 moves between 4 and 1:
-[1, 2, 4, -3, 0, 3, -2] # 4 moves between -3 and 0:
-
-
-
-
-
-
-
-
-
-# 0 does not move:
-# 1, 2, -3, 0, 3, 4, -2
-
-
-# 1, 2, -3, 4, 0, 3, -2
