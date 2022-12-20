@@ -3,6 +3,7 @@
 from os import path
 import unittest
 
+VALUE = 1
 
 def read_numbers(fname):
     norm_file_name = path.join(path.dirname(__file__), fname)
@@ -20,14 +21,14 @@ def reoder(numbers):
     length = len(numbers)
     with_index = list(enumerate(numbers))
     result = with_index.copy()
-    for n in with_index:
-        current_pos = result.index(n)
-        new_pos = (current_pos + n[1]) % (length - 1)
+    for original_pair in with_index:
+        current_pos = result.index(original_pair)
+        new_pos = (current_pos + original_pair[VALUE]) % (length - 1)
         if new_pos == 0:
             new_pos = length
         del result[current_pos]
-        result.insert(new_pos, n)
-    return list(map(lambda p: p[1], result))
+        result.insert(new_pos, original_pair)
+    return list(map(lambda p: p[VALUE], result))
     
 def solve(numbers):
     reordered = reoder(numbers)
