@@ -13,6 +13,14 @@ class Fraction:
     top: int
     bottom: int
 
+    def __init__(self, top, bottom):
+        if top % bottom == 0:
+            self.top = top // bottom
+            self.bottom = 1
+        else:
+            self.top = top
+            self.bottom = bottom
+
     def __add__(self, other):
         return Fraction(self.top * other.bottom + self.bottom * other.top, self.bottom * other.bottom)
 
@@ -42,7 +50,7 @@ class NumberMonkey():
     value: int
 
     def calc(self, data):
-        return self.value
+        return Fraction(self.value, 1)
 
     def get_effect(self, data, name):
         if name == ME:
@@ -65,7 +73,7 @@ class OperationMonkey():
             if self.operation == "*":
                 self.value = first_value * second_value
             elif self.operation == "/":
-                self.value = first_value // second_value
+                self.value = first_value / second_value
             elif self.operation == "+":
                 self.value = first_value + second_value
             elif self.operation == "-":
@@ -76,30 +84,26 @@ class OperationMonkey():
 
     def get_effect(self, data, name):
         if self.effect is None:
-            first_effect = data[self.first].get_effect(data, self.first)
-            second_effect = data[self.second].get_effect(data, self.second)
+            first = data[self.first].get_effect(data, self.first)
+            second = data[self.second].get_effect(data, self.second)
             if self.operation == "+" or self.operation == "-":
                 mul = 1 if self.operation == "+" else -1
-                self.effect = Effect(
-                    first_effect.a + second_effect.a * mul, first_effect.b + second_effect.b * mul)
+                self.effect = Effect(first.a + second.a * mul, first.b + second.b * mul)
             elif self.operation == "*" or self.operation == "/":
-                if first_effect.a.top != 0 and second_effect.a.top != 0:
+                if first.a.top != 0 and second.a.top != 0:
                     raise BaseException(f"Cant do powers")
-                if first_effect.a.top == 0 and second_effect.a.top == 0:
-                    self.effect = Effect(
-                        Fraction(0, 1), Fraction(self.calc(data), 1))
-                if first_effect.a.top != 0:
-                    primary = first_effect
-                    secondary = second_effect.b
-                else:
-                    primary = second_effect
-                    secondary = first_effect.b
                 if self.operation == "*":
-                    self.effect = Effect(
-                        primary.a * secondary, primary.b * secondary)
+                    if first.a.top != 0:
+                        primary = first
+                        secondary = second.b
+                    else:
+                        primary = second
+                        secondary = first.b
+                    self.effect = Effect(primary.a * secondary, primary.b * secondary)
                 else:
-                    self.effect = Effect(
-                        primary.a / secondary, primary.b / secondary)
+                    if second.a.top != 0:
+                        raise BaseException(f"Cant do powers")
+                    self.effect = Effect(first.a / second.b, first.b / second.b)
             else:
                 raise BaseException(f"Unknown operation {self.operation}")
         return self.effect
@@ -145,7 +149,7 @@ def find_what_to_yell(data):
 
 def solve_file(fname):
     data = read_file(fname)
-    p1 = data[ROOT].calc(data)
+    p1 = data[ROOT].calc(data).as_int()
     p2 = find_what_to_yell(data)
     return p1, p2
 
@@ -164,5 +168,5 @@ class TestDay(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    print(solve_file("input.txt"))
+    print(solve_file("input.txt")) # 3769668716709
     unittest.main()
