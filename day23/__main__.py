@@ -81,60 +81,36 @@ def draw(map):
         print(line)
     print("----")
 
-def do_steps(map):
-    for round in range(10):
+def do_steps(map, max_round):
+    round = 0
+    while max_round is None or round < max_round:
         new_positions = defaultdict(set)  # new pos -> set of prev pos
-        # print(f">>>>{len(map)}")
-        # draw(map)
         directions = get_directions(round)
         for pos in map:
             new_pos = get_new_pos(map, pos, directions)
             new_positions[new_pos].add(pos)
 
-        map = set()
+        new_map = set()
         for new_pos, old in new_positions.items():
             if len(old) == 1:
-                map.add(new_pos)
+                new_map.add(new_pos)
             else:
-                map.update(old)
-    # draw(map)
-    return map
+                new_map.update(old)
+        round += 1
+        if new_map == map:
+            return map, round
+        map = new_map
+    return map, max_round 
 
 def solve_file(fname):
     map = read_map(fname)
-    return  score_map(do_steps(map))
+    return  (
+        score_map(do_steps(map, 10)[0]),
+        do_steps(map, None)[1]
+    )
 
 
 class TestDay(unittest.TestCase):
-
-    MAP = set([
-        (0, 6),
-        (1, 10),
-        (1, 10),
-        (2, 1),
-        (2, 3),
-        (2, 6),
-        (3, 5),
-        (4, 2),
-        (4, 8),
-        (4, 11),
-        (5, 0),
-        (5, 7),
-        (5, 8),
-        (6, 4),
-        (6, 5),
-        (7, 1),
-        (7, 10),
-        (8, 3),
-        (8, 5),
-        (8, 8),
-        (10, 3),
-        (10, 6),
-        (10, 9)
-    ])
-
-    # def test_read_map(self):
-    #     self.assertSetEqual(read_map("input-test.txt"), self.MAP)
 
     def test_get_directions(self):
         self.assertEqual(
@@ -150,11 +126,8 @@ class TestDay(unittest.TestCase):
             [Direction.W, Direction.E, Direction.N, Direction.S]
         )
 
-    # def test_solve(self):
-    #     self.assertEqual(score_map(do_steps(self.MAP)), 110)
-
     def test_solve_file(self):
-        self.assertEqual(solve_file("input-test.txt"), 110)
+        self.assertEqual(solve_file("input-test.txt"), (110, 20))
 
 
 if __name__ == '__main__':
