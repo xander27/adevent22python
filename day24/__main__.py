@@ -1,5 +1,3 @@
-
-
 from collections import defaultdict
 from dataclasses import dataclass
 from math import gcd
@@ -7,17 +5,17 @@ from os import path
 import unittest
 
 OFFSETS = {
-    ">": (0, 1),
-    "v": (1, 0),
     "<": (0, -1),
     "^": (-1, 0),
-    "+": (0, 0)
+    "+": (0, 0),
+    ">": (0, 1),
+    "v": (1, 0),
 }
 
 
 def is_anti_move(one, another):
-    s = set([one, another])
-    return s == set(["<", ">"]) or s == set(["^", "v"])
+    s = {one, another}
+    return s == {"<", ">"} or s == {"^", "v"}
 
 
 @dataclass
@@ -25,38 +23,36 @@ class BlizzardStore:
     states: list[dict[tuple[int, int], list[str]]]
     period: int
 
-    def __init__(self, map, first_value):
+    def __init__(self, field, first_value):
         self.states = [first_value]
-        self.period = lcm(map.width - 2, map.height - 2)
+        self.period = lcm(field.width - 2, field.height - 2)
         for _ in range(self.period - 1):
-            self.states.append(self._get_next_blizzards(map, self.states[-1]))
+            self.states.append(self._get_next_blizzards(field, self.states[-1]))
 
-    def get_for_turn(self, turn):
-        return self.states[turn % self.period]
-
-    def _get_next_blizzards(self, map, current):
+    def _get_next_blizzards(self, field, current):
         result = defaultdict(list)
         for pos, chars in current.items():
             for char in chars:
-                next_pos = self._get_next_blizzard_pos(pos, char, map)
+                next_pos = self._get_next_blizzard_pos(pos, char, field)
                 # print(char, pos, next_pos)
                 result[next_pos].append(char)
         return result
 
-    def _get_next_blizzard_pos(self, pos, char, map):
+    @staticmethod
+    def _get_next_blizzard_pos(pos, char, field):
         offset = OFFSETS[char]
         candidate = (pos[0] + offset[0], pos[1] + offset[1])
-        if map.is_open(candidate):
+        if field.is_open(candidate):
             return candidate
         if char == '>':
-            return (pos[0], 1)
+            return pos[0], 1
         if char == '<':
-            return (pos[0], map.width - 2)
+            return pos[0], field.width - 2
         if char == '^':
-            return (map.height - 2, pos[1])
+            return field.height - 2, pos[1]
         if char == 'v':
-            return (1, pos[1])
-        raise BaseException(f"Unpexted char {char}")
+            return 1, pos[1]
+        raise Exception(f"Unexpected char {char}")
 
 
 @dataclass
@@ -101,52 +97,55 @@ def parse_map(lines):
     )
 
 
-def parse_blizzards(lines, map):
+def parse_blizzards(lines, field):
     blizzards = defaultdict(list)
     for row, line in enumerate(lines[1:-1]):
         for col, char in enumerate(line[1:-1]):
             if char == ".":
                 continue
-            blizzards[(row+1, col+1)].append(char)
-    # TODO nok
-    return BlizzardStore(map, blizzards)
+            blizzards[(row + 1, col + 1)].append(char)
+    return BlizzardStore(field, blizzards)
 
 
 def parse_state(lines):
     return State((0, lines[0].index(".")), 0)
 
 
-def solve(map, state, bs, path, memory):
-    length = len(path)
-    best = memory.get("best", float("+inf"))
-    if state.elfs_pos == (map.height - 1, map.final_col):
-        if length < best:
-            memory["best"] = length
-        return length
+def solve(field, state, bs):
+    best = float("+inf")
+    visited = {}
+    stack = [(state, "")]
 
-    if length > best:
-        return float("+inf")
+    while len(stack) > 0:
+        state, way = stack.pop()
+        length = len(way)
 
-    prev = memory.get(state, False)
-    if prev:
-        return float("+inf")
-    memory[state] = True
-
-    next_blizzard_period = (length + 1) % bs.period
-    next_blizzards = bs.states[next_blizzard_period]
-    min_step = float("+inf")
-
-    for char, offset in OFFSETS.items():
-        move = (state.elfs_pos[0] + offset[0], state.elfs_pos[1] + offset[1])
-        if not map.is_open(move):
+        if length >= best:
             continue
-        if len(next_blizzards.get(move, [])) > 0:
-            continue
-        result = solve(map, State(move, next_blizzard_period),
-                       bs, path + char, memory)
-        min_step = min(min_step, result)
 
-    return min_step
+        if state.elfs_pos == (field.height - 1, field.final_col):
+            best = min(length, best)
+            continue
+
+        prev_visit = visited.get(state, float("+inf"))
+        if prev_visit <= length:
+            continue
+        visited[state] = length
+
+        next_blizzard_period = (length + 1) % bs.period
+        next_blizzards = bs.states[next_blizzard_period]
+
+        for char, offset in OFFSETS.items():
+            move = (state.elfs_pos[0] + offset[0],
+                    state.elfs_pos[1] + offset[1])
+            if not field.is_open(move):
+                continue
+            if len(next_blizzards.get(move, [])) > 0:
+                continue
+            new_state = State(move, next_blizzard_period)
+            stack.append((new_state, way + char))
+
+    return best
 
 
 def read_lines(fname):
@@ -157,17 +156,17 @@ def read_lines(fname):
 
 def solve_file(fname):
     lines = read_lines(fname)
-    map = parse_map(lines)
-    bs = parse_blizzards(lines, map)
+    field = parse_map(lines)
+    bs = parse_blizzards(lines, field)
     state = parse_state(lines)
-    return solve(map, state, bs, "", {})
+    return solve(field, state, bs)
 
 
-def draw_blizzards(map, blizzards):
-    print("".join("#" * map.width))
-    for row in range(1, map.height - 1):
+def draw(field, blizzards, pos=None):
+    lines = ["".join("#" * field.width)]
+    for row in range(1, field.height - 1):
         line = "#"
-        for col in range(1, map.width - 1):
+        for col in range(1, field.width - 1):
             directions = blizzards.get((row, col), [])
             length = len(directions)
             if length == 0:
@@ -177,8 +176,11 @@ def draw_blizzards(map, blizzards):
             else:
                 line += str(length)
         line += "#"
-        print(line)
-    print("".join("#" * map.width))
+        lines.append(line)
+    lines.append("".join("#" * field.width))
+    if pos is not None:
+        lines[pos[0]] = "".join("E" if i == pos[1] else c for i, c in enumerate(lines[pos[0]]))
+    print("\n".join(lines))
 
 
 def lcm(a, b):
@@ -186,7 +188,6 @@ def lcm(a, b):
 
 
 class TestDay(unittest.TestCase):
-
     LINES = [
         "#.######",
         "#>>.<^<#",
@@ -201,7 +202,7 @@ class TestDay(unittest.TestCase):
     STATE = State((0, 1), 0)
 
     BS = BlizzardStore(
-        map=MAP,
+        field=MAP,
         first_value={
             (1, 1): [">"], (1, 2): [">"], (1, 4): ["<"], (1, 5): ["^"], (1, 6): ["<"],
             (2, 2): ["<"], (2, 5): ["<"], (2, 6): ["<"],
@@ -217,16 +218,15 @@ class TestDay(unittest.TestCase):
         self.assertEqual(parse_state(self.LINES), self.STATE)
 
     def test_solve(self):
-        # for state in self.BS.states[:2]:
+        # for state in self.BS.states:
         #     draw_blizzards(self.MAP, state)
-        #     # print(state)
-        #     # print("=====")
-        self.assertEqual(solve(self.MAP, self.STATE, self.BS, "", {}), 18)
+        #     print()
+        self.assertEqual(solve(self.MAP, self.STATE, self.BS), 18)
 
     def test_solve_file(self):
         self.assertEqual(solve_file("input-test.txt"), 18)
 
 
 if __name__ == '__main__':
-    # print(solve_file("input.txt"))
+    print(solve_file("input.txt"))  # < 71409
     unittest.main()
