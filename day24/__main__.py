@@ -13,11 +13,6 @@ OFFSETS = {
 }
 
 
-def is_anti_move(one, another):
-    s = {one, another}
-    return s == {"<", ">"} or s == {"^", "v"}
-
-
 @dataclass
 class BlizzardStore:
     states: list[dict[tuple[int, int], list[str]]]
@@ -34,7 +29,6 @@ class BlizzardStore:
         for pos, chars in current.items():
             for char in chars:
                 next_pos = self._get_next_blizzard_pos(pos, char, field)
-                # print(char, pos, next_pos)
                 result[next_pos].append(char)
         return result
 
@@ -69,7 +63,7 @@ class State:
 
 
 @dataclass
-class Map:
+class Field:
     height: int
     width: int
     start_col: int
@@ -88,8 +82,8 @@ class Map:
         return True
 
 
-def parse_map(lines):
-    return Map(
+def parse_field(lines):
+    return Field(
         height=len(lines),
         width=len(lines[0]),
         start_col=lines[0].index("."),
@@ -107,23 +101,21 @@ def parse_blizzards(lines, field):
     return BlizzardStore(field, blizzards)
 
 
-def parse_state(lines):
-    return State((0, lines[0].index(".")), 0)
+def solve(field, start, finish, b_period, bs, items_order):
+    offsets = OFFSETS.values() if items_order else list(OFFSETS.values())[::-1]
 
-
-def solve(field, state, bs):
     best = float("+inf")
     visited = {}
-    stack = [(state, "")]
+    state = State(start, b_period)
+    stack = [(state, 0)]
 
     while len(stack) > 0:
-        state, way = stack.pop()
-        length = len(way)
+        state, length = stack.pop()
 
         if length >= best:
             continue
 
-        if state.elfs_pos == (field.height - 1, field.final_col):
+        if state.elfs_pos == finish:
             best = min(length, best)
             continue
 
@@ -132,18 +124,17 @@ def solve(field, state, bs):
             continue
         visited[state] = length
 
-        next_blizzard_period = (length + 1) % bs.period
+        next_blizzard_period = (state.blizzard_period + 1) % bs.period
         next_blizzards = bs.states[next_blizzard_period]
 
-        for char, offset in OFFSETS.items():
-            move = (state.elfs_pos[0] + offset[0],
-                    state.elfs_pos[1] + offset[1])
+        for offset in offsets:
+            move = (state.elfs_pos[0] + offset[0], state.elfs_pos[1] + offset[1])
             if not field.is_open(move):
                 continue
             if len(next_blizzards.get(move, [])) > 0:
                 continue
             new_state = State(move, next_blizzard_period)
-            stack.append((new_state, way + char))
+            stack.append((new_state, length + 1))
 
     return best
 
@@ -156,31 +147,17 @@ def read_lines(fname):
 
 def solve_file(fname):
     lines = read_lines(fname)
-    field = parse_map(lines)
+    field = parse_field(lines)
     bs = parse_blizzards(lines, field)
-    state = parse_state(lines)
-    return solve(field, state, bs)
 
+    orig_start = (0, field.start_col)
+    orig_finish = (field.height - 1, field.final_col)
 
-def draw(field, blizzards, pos=None):
-    lines = ["".join("#" * field.width)]
-    for row in range(1, field.height - 1):
-        line = "#"
-        for col in range(1, field.width - 1):
-            directions = blizzards.get((row, col), [])
-            length = len(directions)
-            if length == 0:
-                line += "."
-            elif length == 1:
-                line += directions[0]
-            else:
-                line += str(length)
-        line += "#"
-        lines.append(line)
-    lines.append("".join("#" * field.width))
-    if pos is not None:
-        lines[pos[0]] = "".join("E" if i == pos[1] else c for i, c in enumerate(lines[pos[0]]))
-    print("\n".join(lines))
+    p1 = solve(field, orig_start, orig_finish, 0, bs, True)
+
+    p2 = p1 + solve(field, orig_finish, orig_start, p1 % bs.period, bs, False)
+    p2 += solve(field, orig_start, orig_finish, p2 % bs.period, bs, True)
+    return p1, p2
 
 
 def lcm(a, b):
@@ -197,7 +174,7 @@ class TestDay(unittest.TestCase):
         "######.#",
     ]
 
-    MAP = Map(height=6, width=8, start_col=1, final_col=6)
+    MAP = Field(height=6, width=8, start_col=1, final_col=6)
 
     STATE = State((0, 1), 0)
 
@@ -212,21 +189,12 @@ class TestDay(unittest.TestCase):
     )
 
     def test_parse_map(self):
-        self.assertEqual(parse_map(self.LINES), self.MAP)
-
-    def test_parse_state(self):
-        self.assertEqual(parse_state(self.LINES), self.STATE)
-
-    def test_solve(self):
-        # for state in self.BS.states:
-        #     draw_blizzards(self.MAP, state)
-        #     print()
-        self.assertEqual(solve(self.MAP, self.STATE, self.BS), 18)
+        self.assertEqual(parse_field(self.LINES), self.MAP)
 
     def test_solve_file(self):
-        self.assertEqual(solve_file("input-test.txt"), 18)
+        self.assertEqual(solve_file("input-test.txt"), (18, 54))
 
 
 if __name__ == '__main__':
-    print(solve_file("input.txt"))  # < 71409
+    print(solve_file("input.txt"))  # 288
     unittest.main()
