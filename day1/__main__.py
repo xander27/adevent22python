@@ -6,7 +6,7 @@ import unittest
 
 
 class LimitedSortedList:
-    """The first elment is the max"""
+    """The first element is the max"""
 
     def __init__(self, limit):
         self.limit = limit
@@ -54,7 +54,7 @@ def solve(data):
     elements = chain(data, [None])
     result = reduce(lambda s, e: s.apply(e), elements, init)
     top3 = result.top3.elements
-    return (top3[0], sum(top3))
+    return top3[0], sum(top3)
 
 
 def solve_file(fname):
@@ -66,13 +66,13 @@ class TestLimitedSortedList(unittest.TestCase):
     def test_append_to_empty(self):
         self._do_test([1], 1)
 
-    def test_apend_dsc(self):
+    def test_append_dsc(self):
         self._do_test([5, 4, 3], 5, 4, 3, 2, 1)
 
-    def test_apend_asc(self):
+    def test_append_asc(self):
         self._do_test([5, 4, 3], 1, 2, 3, 4, 5)
 
-    def test_apend_random(self):
+    def test_append_random(self):
         self._do_test([10, 5, 5], 1, 5, 4, 4, 5, 3, 10, 1, 2)
 
     def _do_test(self, expected, *vargs):

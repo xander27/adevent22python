@@ -5,7 +5,7 @@ import unittest
 
 def parse_point(string):
     coords = [int(s) for s in string.split(",")]
-    return (coords[0], coords[1], coords[2])
+    return coords[0], coords[1], coords[2]
 
 
 def read_points(fname):
@@ -48,8 +48,8 @@ def visit(start, marked, points, maxs):
     while len(stack) > 0:
         cur = stack.pop()
         invalid = False
-        for demision in range(3):
-            if cur[demision] < 0 or cur[demision] > maxs[demision]:
+        for dems in range(3):
+            if cur[dems] < 0 or cur[dems] > maxs[dems]:
                 invalid = True
                 break
         if invalid or cur in points or cur in marked:
@@ -82,7 +82,7 @@ def solve_file(fname):
     points = read_points(fname)
     out_surface = count_out_surface(points)
     in_surface = count_in_surface(points)
-    return (out_surface, out_surface - in_surface)
+    return out_surface, out_surface - in_surface
 
 
 class TestDay(unittest.TestCase):

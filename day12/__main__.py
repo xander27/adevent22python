@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass
 from os import path
 import unittest
@@ -10,7 +9,7 @@ MAX_HEIGHT = ord('z') - BASE_ORD
 
 
 @dataclass
-class MapGraph():
+class MapGraph:
     heights: list[list[int]]
     start: tuple[int, int]
     ends: set[tuple[int, int]]
@@ -23,7 +22,6 @@ class MapGraph():
         self.ends = ends
         self.rows = len(heights)
         self.cols = len(heights[0])
-
 
     def can_go(self, from_point, to_point):
         from_height = self.heights[from_point[0]][from_point[1]]
@@ -54,6 +52,7 @@ def parse_map_graph(lines, many_ends):
 
     return MapGraph(heights, start, ends)
 
+
 def find_way(graph):
     init_distance = graph.rows * graph.cols + 1
     distance = []
@@ -63,8 +62,8 @@ def find_way(graph):
         complete.append([False] * graph.cols)
 
     distance[graph.start[0]][graph.start[1]] = 0
-    
-    todo = set([graph.start])
+
+    todo = {graph.start}
 
     while len(todo) > 0:
         pointer = pop_next(todo, distance, init_distance)
@@ -77,6 +76,7 @@ def find_way(graph):
         todo.update(to_go)
 
     return min(distance[e[0]][e[1]] for e in graph.ends)
+
 
 def pop_next(todo, distance, init_distance):
     min_distance = init_distance
@@ -103,7 +103,7 @@ def find_points_to_go(pointer, graph, complete, distance):
         if not graph.can_go(pointer, candidate):
             continue
         result.append(candidate)
-    result.sort(key = lambda p: distance[p[0]][p[1]])
+    result.sort(key=lambda p: distance[p[0]][p[1]])
     return result
 
 
@@ -113,12 +113,13 @@ def read_lines(fname):
         for line in file:
             yield line.rstrip()
 
+
 def solve_file(fname):
     lines = list(read_lines(fname))
-    return (find_way(parse_map_graph(lines, False)), find_way(parse_map_graph(lines, True)))
+    return find_way(parse_map_graph(lines, False)), find_way(parse_map_graph(lines, True))
+
 
 class TestDay(unittest.TestCase):
-
     MAP_GRAPH_ONE_END = MapGraph(
         heights=[
             [0, 0, 1, 16, 15, 14, 13, 12],
@@ -128,7 +129,7 @@ class TestDay(unittest.TestCase):
             [0, 1, 3, 4, 5, 6, 7, 8]
         ],
         start=(2, 5),
-        ends=set([(0,0)])
+        ends={(0, 0)}
     )
 
     MAP_GRAPH_MANY_ENDS = MapGraph(
@@ -140,7 +141,7 @@ class TestDay(unittest.TestCase):
             [0, 1, 3, 4, 5, 6, 7, 8]
         ],
         start=(2, 5),
-        ends=set([(0,0), (0,1), (1,0), (2,0), (3,0), (4, 0)])
+        ends={(0, 0), (0, 1), (1, 0), (2, 0), (3, 0), (4, 0)}
     )
 
     def test_parse_map_graph(self):
@@ -157,6 +158,7 @@ class TestDay(unittest.TestCase):
     def test_find_way(self):
         self.assertEqual(find_way(self.MAP_GRAPH_ONE_END), 31)
         self.assertEqual(find_way(self.MAP_GRAPH_MANY_ENDS), 29)
+
 
 if __name__ == '__main__':
     print(solve_file("input.txt"))

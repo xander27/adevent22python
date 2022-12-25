@@ -1,16 +1,14 @@
-
 from dataclasses import dataclass
 from os import path
 import unittest
 
 
 @dataclass
-class Add():
+class Add:
     value: int
 
 
-class Noop():
-
+class Noop:
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -38,7 +36,7 @@ def reshape_crt(crt):
 
 def need_draw(crt_pos, registry):
     rem = crt_pos % 40
-    return registry >= rem - 1 and registry <= rem + 1
+    return rem - 1 <= registry <= rem + 1
 
 
 def execute(instructions):
@@ -75,7 +73,6 @@ def read_instructions(fname):
 
 
 class TestDay(unittest.TestCase):
-
     INSTRUCTIONS = list(read_instructions("input-test.txt"))
 
     def test_execute_small(self):
@@ -86,7 +83,7 @@ class TestDay(unittest.TestCase):
         At the start of the fourth cycle, the addx -5 instruction begins execution. During the fourth cycle, X is still 4.
         During the fifth cycle, X is still 4. After the fifth cycle, the addx -5 instruction finishes execution, setting X to -1.
         """
-        actual = execute([Noop(), Add(3),  Add(-5)]).registry
+        actual = execute([Noop(), Add(3), Add(-5)]).registry
         #                                 0, 1, 2, 3, 4, 5
         self.assertSequenceEqual(actual, [1, 1, 1, 1, 4, 4, -1])
 
@@ -112,8 +109,8 @@ class TestDay(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    instructuions = read_instructions("input.txt")
-    result = execute(instructuions)
+    instructions = read_instructions("input.txt")
+    result = execute(instructions)
     score_registry(result.registry)
     for raw in result.crt:
         print(raw)

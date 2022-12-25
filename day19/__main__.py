@@ -1,4 +1,3 @@
-
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import IntEnum
@@ -16,7 +15,7 @@ class Element(IntEnum):
 
 
 @dataclass
-class State():
+class State:
     robots: tuple[int, int, int, int]
     stash: tuple[int, int, int, int]
 
@@ -24,12 +23,8 @@ class State():
 
     def turn(self, robot_type=None, cost=None):
         if robot_type is None:
-            after_work = tuple(x + self.robots[i]
-                               for i, x in enumerate(self.stash))
-            return State(
-                tuple(r for r in self.robots),
-                after_work
-            )
+            after_work = tuple(x + self.robots[i] for i, x in enumerate(self.stash))
+            return State(tuple(r for r in self.robots), after_work)
 
         updated_stash = tuple(x - cost[i] for i, x in enumerate(self.stash))
         can_add = all(map(lambda x: x >= 0, updated_stash))
@@ -70,13 +65,15 @@ def get_best_possible(state, time):
     prog_sum = time * (time + 1) // 2
     return state.stash[Element.GEODE] * 2 + prog_sum
 
+
 def get_max_robots(blueprint):
     maxs = [0, 0, 0, 999]
     for robot in blueprint:
         for i, cost in enumerate(robot):
-            if cost > maxs[i]: 
+            if cost > maxs[i]:
                 maxs[i] = cost
     return maxs
+
 
 def get_options(state, blueprint, time, max_robots):
     new_state = state.turn(Element.GEODE, blueprint[Element.GEODE])
@@ -94,7 +91,7 @@ def get_options(state, blueprint, time, max_robots):
             options.append(new_state)
     options.append(state.turn())
     return options
-    
+
 
 def visit(state, time, blueprint, by_state, by_time, max_robots):
     val = state.stash[Element.GEODE]
@@ -121,18 +118,17 @@ def visit(state, time, blueprint, by_state, by_time, max_robots):
         else:
             return -1
     same_time.add(state)
-    same_time.remove
     for other in to_replace:
         same_time.remove(other)
 
     by_state[state] = time
-    new_time = time-1
-    options = []
+    new_time = time - 1
 
     options = get_options(state, blueprint, time, max_robots)
     result = max(visit(o, new_time, blueprint, by_state, by_time, max_robots) for o in options)
 
     return result
+
 
 def score_blueprint(blueprint, turns):
     return visit(INITIAL_STATE, turns, blueprint, {'best': 0}, defaultdict(set), get_max_robots(blueprint))
@@ -148,6 +144,7 @@ def parse_blueprint(line):
     parts = line.split(".")[:len(Element)]
     return [[parse_cost(part, element) for element in Element] for part in parts]
 
+
 def read_lines(fname):
     norm_file_name = path.join(path.dirname(__file__), fname)
     with open(norm_file_name, "r", encoding="utf-8") as file:
@@ -157,18 +154,19 @@ def read_lines(fname):
 def read_blueprints(fname):
     return [parse_blueprint(l) for l in read_lines(fname)]
 
+
 def solve_file_p1(fname):
-    blueprints = [parse_blueprint(l) for l in read_lines(fname)]
-    return sum(score_blueprint(b, 24) * (i+1) for i, b in enumerate(blueprints))
+    blueprints = [parse_blueprint(line) for line in read_lines(fname)]
+    return sum(score_blueprint(b, 24) * (i + 1) for i, b in enumerate(blueprints))
+
 
 def solve_file_p2(fname):
-    blueprints = [parse_blueprint(l) for l in read_lines(fname)]
+    blueprints = [parse_blueprint(line) for line in read_lines(fname)]
     blueprints = blueprints[:3]
-    return reduce(lambda a, b: a*b, (score_blueprint(b, 32) for b in blueprints))
+    return reduce(lambda a, b: a * b, (score_blueprint(b, 32) for b in blueprints))
 
 
 class TestDay(unittest.TestCase):
-
     BLUEPRINTS = [
         [
             [4, 0, 0, 0],
@@ -185,21 +183,22 @@ class TestDay(unittest.TestCase):
     ]
 
     def test_is_better(self):
-        this = State((1,1,1,1), (1,1,1,1))
-        self.assertTrue(this.is_better(State((1,1,1,0), (1,1,1,1))))
-        self.assertTrue(this.is_better(State((1,1,1,1), (1,1,1,0))))
-        self.assertTrue(this.is_better(State((1,1,0,1), (1,1,1,0))))
+        this = State((1, 1, 1, 1), (1, 1, 1, 1))
+        self.assertTrue(this.is_better(State((1, 1, 1, 0), (1, 1, 1, 1))))
+        self.assertTrue(this.is_better(State((1, 1, 1, 1), (1, 1, 1, 0))))
+        self.assertTrue(this.is_better(State((1, 1, 0, 1), (1, 1, 1, 0))))
 
-        self.assertFalse(this.is_better(State((2,1,1,1), (1,1,1,1))))
-        self.assertFalse(this.is_better(State((1,1,1,1), (2,1,1,1))))
-        self.assertFalse(this.is_better(State((1,2,1,1), (1,2,1,1))))
+        self.assertFalse(this.is_better(State((2, 1, 1, 1), (1, 1, 1, 1))))
+        self.assertFalse(this.is_better(State((1, 1, 1, 1), (2, 1, 1, 1))))
+        self.assertFalse(this.is_better(State((1, 2, 1, 1), (1, 2, 1, 1))))
 
-        self.assertIsNone(this.is_better(State((2,1,1,1), (0,1,1,1))))
-        self.assertIsNone(this.is_better(State((1,1,1,0), (2,1,1,1))))
-        self.assertIsNone(this.is_better(State((1,2,1,0), (1,2,1,1))))
+        self.assertIsNone(this.is_better(State((2, 1, 1, 1), (0, 1, 1, 1))))
+        self.assertIsNone(this.is_better(State((1, 1, 1, 0), (2, 1, 1, 1))))
+        self.assertIsNone(this.is_better(State((1, 2, 1, 0), (1, 2, 1, 1))))
 
     def test_parse_blueprint(self):
-        lines = "Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian."
+        lines = "Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 " \
+                "ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian. "
         self.assertEqual(parse_blueprint(lines), self.BLUEPRINTS[0])
 
     def test_read_blueprints(self):
@@ -212,7 +211,8 @@ class TestDay(unittest.TestCase):
         self.assertEqual(get_max_robots(self.BLUEPRINTS[0]), [4, 14, 7, 999])
         self.assertEqual(get_max_robots(self.BLUEPRINTS[1]), [3, 8, 12, 999])
 
+
 if __name__ == '__main__':
-    #print(solve_file_p1("input.txt")) # 1150
-    print(solve_file_p2("input.txt")) # - 37367
+    # print(solve_file_p1("input.txt")) # 1150
+    # print(solve_file_p2("input.txt"))  # - 37367
     unittest.main()

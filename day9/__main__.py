@@ -20,11 +20,11 @@ class Direction(Enum):
         for direction in Direction:
             if direction.code == code:
                 return direction
-        raise BaseException(f"Unknown code {code}")
+        raise Exception(f"Unknown code {code}")
 
 
 @dataclass
-class Command():
+class Command:
     direction: Direction
     distance: int
 
@@ -47,15 +47,15 @@ def get_next_tail_position(cur_tail, head):
 
     if abs_diff[0] > 1:
         if abs_diff[1] == 0:
-            return (cur_tail[0] + normalize(diff[0]), cur_tail[1])
+            return cur_tail[0] + normalize(diff[0]), cur_tail[1]
         else:
-            return (cur_tail[0] + normalize(diff[0]), cur_tail[1] + normalize(diff[1]))
+            return cur_tail[0] + normalize(diff[0]), cur_tail[1] + normalize(diff[1])
 
     if abs_diff[1] > 1:
         if abs_diff[0] == 0:
-            return (cur_tail[0], cur_tail[1] + normalize(diff[1]))
+            return cur_tail[0], cur_tail[1] + normalize(diff[1])
         else:
-            return (cur_tail[0] + normalize(diff[0]), cur_tail[1] + normalize(diff[1]))
+            return cur_tail[0] + normalize(diff[0]), cur_tail[1] + normalize(diff[1])
 
     return cur_tail
 
@@ -74,7 +74,7 @@ def count_tail_positions(commands, length):
             for i in range(length - 1):
                 head, tail = rope[i], rope[i + 1]
                 tail = get_next_tail_position(tail, head)
-                rope[i], rope[i+1] = head, tail
+                rope[i], rope[i + 1] = head, tail
             positions.add(rope[-1])
 
     return len(positions)
@@ -94,7 +94,6 @@ def score_file(fname, length):
 
 
 class TestDay(unittest.TestCase):
-
     COMMANDS = [
         Command(Direction.RIGHT, 4),
         Command(Direction.UP, 4),
@@ -122,14 +121,8 @@ class TestDay(unittest.TestCase):
         self.assertEqual(count_tail_positions(self.COMMANDS_LARGE, 10), 36)
 
     def read_commands(self):
-        self.assertSequenceEqual(
-            list(read_commands("input-test.txt")),
-            self.COMMANDS
-        )
-        self.assertSequenceEqual(
-            list(read_commands("input-test-lage.txt")),
-            self.COMMANDS_LARGE
-        )
+        self.assertSequenceEqual(list(read_commands("input-test.txt")), self.COMMANDS)
+        self.assertSequenceEqual(list(read_commands("input-test-lage.txt")), self.COMMANDS_LARGE)
 
     def test_score_filee(self):
         self.assertEqual(score_file("input-test.txt", 2), 13)

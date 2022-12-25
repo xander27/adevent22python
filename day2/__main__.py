@@ -18,7 +18,7 @@ class Outcome(Enum):
         for outcome in Outcome:
             if outcome.code == code:
                 return outcome
-        raise BaseException(f"Unknown code {code}")
+        raise Exception(f"Unknown code {code}")
 
 
 class Shape(Enum):
@@ -28,7 +28,7 @@ class Shape(Enum):
     Scissors   C   Z   3
     """
     ROCK = ('A', 'X', 'Z', 1)
-    PAPPER = ('B', 'Y', 'X', 2)
+    PAPER = ('B', 'Y', 'X', 2)
     SCISSORS = ('C', 'Z', 'Y', 3)
 
     def __init__(self, opponent_code, my_code, defeats_code, score):
@@ -42,14 +42,14 @@ class Shape(Enum):
         for shape in Shape:
             if shape.my_code == code:
                 return shape
-        raise BaseException(f"Unknown my code {code}")
+        raise Exception(f"Unknown my code {code}")
 
     @staticmethod
     def from_opponent_code(code):
         for shape in Shape:
             if shape.opponent_code == code:
                 return shape
-        raise BaseException(f"Unknown opponent code {code}")
+        raise Exception(f"Unknown opponent code {code}")
 
     def get_outcome(self, opponent_shape):
         if self == opponent_shape:
@@ -63,7 +63,7 @@ def get_shape_from_opponent_code_and_outcome(opponent_shape, outcome):
     for shape in Shape:
         if shape.get_outcome(opponent_shape) == outcome:
             return shape
-    raise BaseException("Unexpected state")
+    raise Exception("Unexpected state")
 
 
 def score_pair_part1(opponent_code, my_code):
@@ -98,32 +98,32 @@ def read_paris(fname):
 
 def score_file(fname):
     pairs = list(read_paris(fname))
-    return (score_part1(pairs), score_part2(pairs))
+    return score_part1(pairs), score_part2(pairs)
 
 
 class TestDay(unittest.TestCase):
 
     def test_shape_from_code_ok(self):
         self.assertEqual(Shape.ROCK, Shape.from_my_code("X"))
-        self.assertEqual(Shape.PAPPER, Shape.from_my_code("Y"))
+        self.assertEqual(Shape.PAPER, Shape.from_my_code("Y"))
         self.assertEqual(Shape.SCISSORS, Shape.from_my_code("Z"))
 
-    def test_shape_from_code_unkwnow(self):
+    def test_shape_from_code_unknown(self):
         with self.assertRaises(BaseException):
             Shape.from_my_code("A")
 
     def test_get_outcome(self):
         self.assertEqual(Shape.ROCK.get_outcome(Shape.ROCK), Outcome.DRAW)
-        self.assertEqual(Shape.ROCK.get_outcome(Shape.PAPPER), Outcome.LOSE)
+        self.assertEqual(Shape.ROCK.get_outcome(Shape.PAPER), Outcome.LOSE)
         self.assertEqual(Shape.ROCK.get_outcome(Shape.SCISSORS), Outcome.WIN)
 
-        self.assertEqual(Shape.PAPPER.get_outcome(Shape.ROCK), Outcome.WIN)
-        self.assertEqual(Shape.PAPPER.get_outcome(Shape.PAPPER), Outcome.DRAW)
-        self.assertEqual(Shape.PAPPER.get_outcome(
+        self.assertEqual(Shape.PAPER.get_outcome(Shape.ROCK), Outcome.WIN)
+        self.assertEqual(Shape.PAPER.get_outcome(Shape.PAPER), Outcome.DRAW)
+        self.assertEqual(Shape.PAPER.get_outcome(
             Shape.SCISSORS), Outcome.LOSE)
 
         self.assertEqual(Shape.SCISSORS.get_outcome(Shape.ROCK), Outcome.LOSE)
-        self.assertEqual(Shape.SCISSORS.get_outcome(Shape.PAPPER), Outcome.WIN)
+        self.assertEqual(Shape.SCISSORS.get_outcome(Shape.PAPER), Outcome.WIN)
         self.assertEqual(Shape.SCISSORS.get_outcome(
             Shape.SCISSORS), Outcome.DRAW)
 

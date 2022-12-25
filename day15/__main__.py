@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass
 from os import path
 import re
@@ -15,9 +14,9 @@ class Range:
     end: int
 
     def overlap(self, other):
-        if self.begin <= other.begin and self.end >= other.begin:
+        if self.begin <= other.begin <= self.end:
             return True
-        if self.begin >= other.begin and self.begin <= other.end:
+        if other.begin <= self.begin <= other.end:
             return True
         return False
 
@@ -26,7 +25,7 @@ class Range:
 
 
 @dataclass
-class Sensor():
+class Sensor:
     own_x: int
     own_y: int
     beacon_x: int
@@ -42,8 +41,7 @@ class Sensor():
 
 
 def parse_sensor(line):
-    digits_groups = [(a.start(), a.end())
-                     for a in list(re.finditer('\-?[\d]+', line))]
+    digits_groups = [(a.start(), a.end()) for a in list(re.finditer('\-?[\d]+', line))]
     numbers = []
     for i in range(4):
         begin = digits_groups[i][0]
@@ -72,14 +70,15 @@ def append_range(others, new_range):
             others.append(new_range)
             return others
 
+
 def get_ranges_from_line(sensors, y, max_coord=None):
     ranges = []
     for sensor in sensors:
         y_distance = abs(sensor.own_y - y)
-        max_x_distnace = sensor.distance - y_distance
-        if max_x_distnace >= 0:
-            begin = sensor.own_x - max_x_distnace
-            end = sensor.own_x + max_x_distnace
+        max_x_distance = sensor.distance - y_distance
+        if max_x_distance >= 0:
+            begin = sensor.own_x - max_x_distance
+            end = sensor.own_x + max_x_distance
             if max_coord is not None:
                 begin = max(0, begin)
                 end = min(max_coord, end)
@@ -92,9 +91,11 @@ def get_ranges_from_line(sensors, y, max_coord=None):
                     break
     return ranges
 
+
 def count_points_in_line(sensors, y):
     ranges = get_ranges_from_line(sensors, y)
     return sum(r.end - r.begin for r in ranges)
+
 
 def find_freq(sensors, max_coord):
     for y in range(max_coord + 1):
@@ -110,7 +111,6 @@ def solve_file(fname, y, max_coord):
 
 
 class TestDay(unittest.TestCase):
-
     SENSORS = [
         Sensor(2, 18, -2, 15),
         Sensor(9, 16, 10, 16),
@@ -132,8 +132,7 @@ class TestDay(unittest.TestCase):
 
     def test_parse_sensor(self):
         self.assertEqual(
-            parse_sensor(
-                "Sensor at x=2, y=18: closest beacon is at x=-2, y=15"),
+            parse_sensor("Sensor at x=2, y=18: closest beacon is at x=-2, y=15"),
             Sensor(2, 18, -2, 15)
         )
 

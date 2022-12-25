@@ -21,10 +21,8 @@ def is_valid_step(a, b):
 
     for x, y in zip(a, b):
         result = is_valid_step(x, y)
-        if result == True:
-            return True
-        if result == False:
-            return False
+        if result is not None:
+            return result
     return is_valid_step(len(a), len(b))
 
 

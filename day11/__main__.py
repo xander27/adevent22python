@@ -8,7 +8,7 @@ CALM_FACTOR = 3
 
 
 @dataclass
-class Monkey():
+class Monkey:
     items: list[int]
     operation: str
     arg: int
@@ -21,7 +21,7 @@ class Monkey():
 def remove_prefix(string, prefix):
     string = string.strip()
     if not string.startswith(prefix):
-        raise BaseException(f"{string} is not started with {prefix}")
+        raise Exception(f"{string} is not started with {prefix}")
     return string[len(prefix):]
 
 
@@ -44,7 +44,7 @@ def parse_monkey(lines):
         operation = "+"
         arg = int(operation_str.split(" ")[1])
     else:
-        raise BaseException("Can not parse operation {lines[2]}")
+        raise Exception("Can not parse operation {lines[2]}")
 
     divider = int(remove_prefix(lines[3], "Test: divisible by "))
     true_path = int(remove_prefix(lines[4], "If true: throw to monkey "))
@@ -75,24 +75,24 @@ def apply_operation(value, operation, arg):
         return value * arg
     if operation == "**" and arg == 2:
         return value ** 2
-    raise BaseException(f"Unkown operation {operation} for arg {arg}")
+    raise Exception(f"Unknown operation {operation} for arg {arg}")
 
 
-def calculate_new_value(item, operation, arg, relif, base):
+def calculate_new_value(item, operation, arg, calm, base):
     item = apply_operation(item, operation, arg)
-    if relif:
+    if calm:
         item = item // CALM_FACTOR
     item = item % base
     return item
 
 
-def simulate_round(monkeys, relif, base):
+def simulate_round(monkeys, calm, base):
     for monkey in monkeys:
         items = monkey.items
         monkey.inspects = monkey.inspects + len(items)
         monkey.items = []
         for item in items:
-            value = calculate_new_value(item, monkey.operation, monkey.arg, relif, base)
+            value = calculate_new_value(item, monkey.operation, monkey.arg, calm, base)
             going = monkey.true_path if value % monkey.divider == 0 else monkey.false_path
             monkeys[going].items.append(value)
 
@@ -121,7 +121,8 @@ def score_file(fname):
 
 class TestDay(unittest.TestCase):
 
-    def _get_inital(self):
+    @staticmethod
+    def _get_init():
         return [
             Monkey([79, 98], "*", 19, 23, 2, 3),
             Monkey([54, 65, 75, 74], "+", 6, 19, 2, 0),
@@ -130,7 +131,7 @@ class TestDay(unittest.TestCase):
         ]
 
     def test_read_monkeys(self):
-        expected = self._get_inital()
+        expected = self._get_init()
         self.assertSequenceEqual(read_monkeys("input-test.txt"), expected)
 
     def test_apply_operation(self):
@@ -139,7 +140,7 @@ class TestDay(unittest.TestCase):
         self.assertEqual(apply_operation(5, "**", 2), 25)
 
     def test_simulate_round(self):
-        monkeys = self._get_inital()
+        monkeys = self._get_init()
         simulate_round(monkeys, True, get_base(monkeys))
         self.assertSequenceEqual(monkeys[0].items, [20, 23, 27, 26])
         self.assertSequenceEqual(
@@ -148,9 +149,9 @@ class TestDay(unittest.TestCase):
         self.assertSequenceEqual(monkeys[3].items, [])
 
     def test_business_level(self):
-        self.assertEqual(business_level(self._get_inital(), True, 20), 10605)
+        self.assertEqual(business_level(self._get_init(), True, 20), 10605)
         self.assertEqual(business_level(
-            self._get_inital(), False, 10000), 2713310158)
+            self._get_init(), False, 10000), 2713310158)
 
     def test_score_file(self):
         self.assertEqual(score_file("input-test.txt"), (10605, 2713310158))

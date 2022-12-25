@@ -31,9 +31,9 @@ def read_map(fname):
     return map
 
 
-def get_directions(round):
+def get_directions(turn):
     length = len(Direction)
-    return [Direction.all()[(i + round) % length] for i in range(length)]
+    return [Direction.all()[(i + turn) % length] for i in range(length)]
 
 
 def get_new_pos(map, pos, directions):
@@ -53,6 +53,7 @@ def get_new_pos(map, pos, directions):
         return pos
     return canidate
 
+
 def get_bounds(map):
     min_row, min_col = float("+inf"), float("+inf")
     max_row, max_col = float("-inf"), float("-inf")
@@ -62,8 +63,9 @@ def get_bounds(map):
         min_col = min(pos[1], min_col)
         max_row = max(pos[0], max_row)
         max_col = max(pos[1], max_col)
-    
+
     return min_row, max_row, min_col, max_col
+
 
 def score_map(map):
     min_row, max_row, min_col, max_col = get_bounds(map)
@@ -81,13 +83,14 @@ def draw(map):
         print(line)
     print("----")
 
-def do_steps(map, max_round):
-    round = 0
-    while max_round is None or round < max_round:
+
+def do_steps(cur_map, max_round):
+    turn = 0
+    while max_round is None or turn < max_round:
         new_positions = defaultdict(set)  # new pos -> set of prev pos
-        directions = get_directions(round)
-        for pos in map:
-            new_pos = get_new_pos(map, pos, directions)
+        directions = get_directions(turn)
+        for pos in cur_map:
+            new_pos = get_new_pos(cur_map, pos, directions)
             new_positions[new_pos].add(pos)
 
         new_map = set()
@@ -96,17 +99,18 @@ def do_steps(map, max_round):
                 new_map.add(new_pos)
             else:
                 new_map.update(old)
-        round += 1
-        if new_map == map:
-            return map, round
-        map = new_map
-    return map, max_round 
+        turn += 1
+        if new_map == cur_map:
+            return cur_map, turn
+        cur_map = new_map
+    return cur_map, max_round
+
 
 def solve_file(fname):
-    map = read_map(fname)
-    return  (
-        score_map(do_steps(map, 10)[0]),
-        do_steps(map, None)[1]
+    init_map = read_map(fname)
+    return (
+        score_map(do_steps(init_map, 10)[0]),
+        do_steps(init_map, None)[1]
     )
 
 

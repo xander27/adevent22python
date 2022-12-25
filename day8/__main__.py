@@ -9,12 +9,10 @@ def read_lines(fname):
 
 
 def init_bool_map_by_size(rows, cols):
-    result = []
-    result.append([True] * cols)
+    result = [[True] * cols]
     for _ in range(rows - 2):
-        line = []
-        line.append(True)
-        line.extend([False] * (cols-2))
+        line = [True]
+        line.extend([False] * (cols - 2))
         line.append(True)
         result.append(line)
     result.append([True] * cols)
@@ -59,7 +57,7 @@ def fill_bool_col(forest, bool_map, col, first_pos, begin, end, delta):
             bool_map[i][col] = True
 
 
-def score_tree(forest, rows, cols,  row_index, col_index):
+def score_tree(forest, row_index, col_index):
     """There a lot of room for optimisation"""
     row = forest[row_index]
     cur_val = row[col_index]
@@ -67,16 +65,15 @@ def score_tree(forest, rows, cols,  row_index, col_index):
     cols = len(row)
 
     score = score_tree_in_row(row, cur_val, col_index + 1, cols, 1)
-    score = score * score_tree_in_row(row, cur_val, col_index - 1, -1, -1)
-    score = score * \
-        score_tree_in_col(forest, col_index, cur_val, row_index + 1, rows, 1)
-    score = score * \
-        score_tree_in_col(forest, col_index, cur_val, row_index - 1, -1, -1)
+    score *= score_tree_in_row(row, cur_val, col_index - 1, -1, -1)
+    score *= score_tree_in_col(forest, col_index, cur_val, row_index + 1, rows, 1)
+    score *= score_tree_in_col(forest, col_index, cur_val, row_index - 1, -1, -1)
 
     return score
 
 
 def score_tree_in_row(row, cur_val, begin, end, delta):
+    i = - 1
     for i, col_index in enumerate(range(begin, end, delta)):
         val = row[col_index]
         if val >= cur_val:
@@ -86,6 +83,7 @@ def score_tree_in_row(row, cur_val, begin, end, delta):
 
 
 def score_tree_in_col(forest, col_index, cur_val, begin, end, delta):
+    i = - 1
     for i, row_index in enumerate(range(begin, end, delta)):
         val = forest[row_index][col_index]
         if val >= cur_val:
@@ -97,16 +95,15 @@ def score_tree_in_col(forest, col_index, cur_val, begin, end, delta):
 def max_score_tree(forest):
     rows = len(forest)
     cols = len(forest[0])
-    return max((score_tree(forest, rows, cols, r, c) for c in range(1, cols-1) for r in range(1, rows-1)))
+    return max((score_tree(forest, r, c) for c in range(1, cols - 1) for r in range(1, rows - 1)))
 
 
 def solve_file(fname):
     forest = read_lines(fname)
-    return (count_visible_from_outside(forest), max_score_tree(forest))
+    return count_visible_from_outside(forest), max_score_tree(forest)
 
 
 class TestDay(unittest.TestCase):
-
     FOREST = [
         "30373",
         "25512",
@@ -119,8 +116,8 @@ class TestDay(unittest.TestCase):
         self.assertEqual(count_visible_from_outside(self.FOREST), 21)
 
     def test_score_tree(self):
-        self.assertEqual(score_tree(self.FOREST, 5, 5, 1, 2), 4)
-        self.assertEqual(score_tree(self.FOREST, 5, 5, 3, 2), 8)
+        self.assertEqual(score_tree(self.FOREST, 1, 2), 4)
+        self.assertEqual(score_tree(self.FOREST, 3, 2), 8)
 
     def test_max_score_tree(self):
         self.assertEqual(max_score_tree(self.FOREST), 8)

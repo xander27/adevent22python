@@ -39,7 +39,7 @@ def read_lines(fname):
             yield line
 
 
-def separate_state_and_comand_lines(lines):
+def separate_state_and_command_lines(lines):
     state = []
     commands = []
     commands_mode = False
@@ -50,7 +50,7 @@ def separate_state_and_comand_lines(lines):
             commands.append(line)
         else:
             state.append(line)
-    return (state, commands)
+    return state, commands
 
 
 def apply_commands_9000(state, commands):
@@ -73,7 +73,7 @@ def string_of_tops(state):
 
 def solve_file(fname):
     lines = read_lines(fname)
-    state_lines, command_lines = separate_state_and_comand_lines(lines)
+    state_lines, command_lines = separate_state_and_command_lines(lines)
     commands = list(parse_commands(command_lines))
 
     state_9000 = parse_state(state_lines)
@@ -83,38 +83,35 @@ def solve_file(fname):
     tops9000 = string_of_tops(state_9000)
     tops9001 = string_of_tops(state_9001)
 
-    return (tops9000, tops9001)
+    return tops9000, tops9001
 
 
 class TestDay(unittest.TestCase):
 
     def test_parse_state(self):
         lines = read_lines("input-test.txt")
-        state_lines, _ = separate_state_and_comand_lines(lines)
+        state_lines, _ = separate_state_and_command_lines(lines)
         actual = parse_state(state_lines)
         expected = [['Z', 'N'], ['M', 'C', 'D'], ['P']]
         self.assertEqual(actual, expected)
 
     def test_parse_commands(self):
         lines = read_lines("input-test.txt")
-        _, command_lines = separate_state_and_comand_lines(lines)
+        _, command_lines = separate_state_and_command_lines(lines)
         actual = list(parse_commands(command_lines))
-        expected = [Command(1, 1, 0), Command(3, 0, 2),
-                    Command(2, 1, 0), Command(1, 0, 1)]
+        expected = [Command(1, 1, 0), Command(3, 0, 2),  Command(2, 1, 0), Command(1, 0, 1)]
         self.assertEqual(actual, expected)
 
     def test_apply_commands_9000(self):
         state = [['Z', 'N'], ['M', 'C', 'D'], ['P']]
-        commands = [Command(1, 1, 0), Command(3, 0, 2),
-                    Command(2, 1, 0), Command(1, 0, 1)]
+        commands = [Command(1, 1, 0), Command(3, 0, 2), Command(2, 1, 0), Command(1, 0, 1)]
         expected = [['C'], ['M'], ['P', 'D', 'N', 'Z']]
         apply_commands_9000(state, commands)
         self.assertEqual(state, expected)
 
     def test_apply_commands_9001(self):
         state = [['Z', 'N'], ['M', 'C', 'D'], ['P']]
-        commands = [Command(1, 1, 0), Command(3, 0, 2),
-                    Command(2, 1, 0), Command(1, 0, 1)]
+        commands = [Command(1, 1, 0), Command(3, 0, 2), Command(2, 1, 0), Command(1, 0, 1)]
         expected = [['M'], ['C'], ['P', 'Z', 'N', 'D']]
         apply_commands_9001(state, commands)
         self.assertEqual(state, expected)

@@ -1,4 +1,3 @@
-
 import inspect
 from os import path
 import unittest
@@ -21,7 +20,7 @@ class Figure(Enum):
             "  @"
         ]
     ),
-    PILONE = ["@", "@", "@", "@"]
+    POLE = ["@", "@", "@", "@"]
     SQUARE = (
         [
             "@@",
@@ -47,9 +46,9 @@ class Game():
 
     def __init__(self, wind_pattern):
         self.data = []
-        self.top_poistion = 0
+        self.top_pos = 0
         self._wind_pattern = wind_pattern
-        self._wind_postition = 0
+        self._wind_pos = 0
 
     def __str__(self):
         lines = []
@@ -62,7 +61,7 @@ class Game():
         """Figure is array of strings"""
 
         figure_left = 2
-        figure_bottom = self.top_poistion + self.START_OFFSET
+        figure_bottom = self.top_pos + self.START_OFFSET
         figure_top = figure_bottom + figure.height
 
         need_add = figure_top - len(self.data)
@@ -70,9 +69,9 @@ class Game():
             self.data.append(self.EMPTY_LINE.copy())
 
         while True:
-            wind_postition = self._wind_postition % len(self._wind_pattern)
-            wind = self._wind_pattern[wind_postition]
-            self._wind_postition += 1
+            wind_pos = self._wind_pos % len(self._wind_pattern)
+            wind = self._wind_pattern[wind_pos]
+            self._wind_pos += 1
             offset = 1 if wind == ">" else -1
             if self._can_move(figure, figure_left, figure_bottom, offset):
                 figure_left += offset
@@ -81,8 +80,8 @@ class Game():
             else:
                 break
         self._add_figure(figure, figure_left, figure_bottom)
-        self.top_poistion = max(self.top_poistion, figure_bottom + figure.height)
-        return (wind_postition, self.top_poistion)
+        self.top_pos = max(self.top_pos, figure_bottom + figure.height)
+        return wind_pos, self.top_pos
 
     def _add_figure(self, figure, left, bottom):
         for col in range(figure.width):
@@ -121,12 +120,13 @@ class Game():
                     return False
         return True
 
+
 def solve(wind_pattern, turns):
     game = Game(wind_pattern)
     figures = Figure.all()
-    cycle_canidates = []
+    cycle_candidates = []
     for _ in range(len(Figure)):
-        cycle_canidates.append({})
+        cycle_candidates.append({})
     turn = 0
     top_by_cycle = 0
     cycle_processed = False
@@ -136,7 +136,7 @@ def solve(wind_pattern, turns):
         if cycle_processed or turn < len(figures) * len(wind_pattern):
             turn += 1
             continue
-        prev_turn, prev_top_pos = cycle_canidates[figure_index].get(wind_pos, (None, None))
+        prev_turn, prev_top_pos = cycle_candidates[figure_index].get(wind_pos, (None, None))
         if prev_turn is not None:
             turn_diff = turn - prev_turn
             top_diff = top_pos - prev_top_pos
@@ -145,10 +145,11 @@ def solve(wind_pattern, turns):
             turn += cycles * turn_diff
             cycle_processed = True
         else:
-            cycle_canidates[figure_index][wind_pos] = (turn, top_pos)
+            cycle_candidates[figure_index][wind_pos] = (turn, top_pos)
         turn += 1
-        
-    return game.top_poistion + top_by_cycle
+
+    return game.top_pos + top_by_cycle
+
 
 def solve_file(fname, turns):
     norm_file_name = path.join(path.dirname(__file__), fname)
@@ -156,8 +157,8 @@ def solve_file(fname, turns):
         wind_pattern = file.read().strip()
     return solve(wind_pattern, turns)
 
-class TestDay(unittest.TestCase):
 
+class TestDay(unittest.TestCase):
     WIND_PATTERN = ">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>"
 
     def test_add_figure(self):

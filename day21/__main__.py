@@ -15,13 +15,13 @@ class Effect:
 
 
 @dataclass
-class NumberMonkey():
+class NumberMonkey:
     value: int
 
-    def calc(self, data):
+    def calc(self, _):
         return self.value
 
-    def get_effect(self, data, name):
+    def get_effect(self, _, name):
         if name == ME:
             return Effect(1, 0)
         return Effect(0, self.value)
@@ -48,20 +48,19 @@ class OperationMonkey():
             elif self.operation == "-":
                 self.value = first_value - second_value
             else:
-                raise BaseException(f"Unknown operation {self.operation}")
+                raise Exception(f"Unknown operation {self.operation}")
         return self.value
 
-    def get_effect(self, data, name):
+    def get_effect(self, data, _):
         if self.effect is None:
             first = data[self.first].get_effect(data, self.first)
             second = data[self.second].get_effect(data, self.second)
             if self.operation == "+" or self.operation == "-":
                 mul = 1 if self.operation == "+" else -1
-                self.effect = Effect(first.a + second.a *
-                                     mul, first.b + second.b * mul)
+                self.effect = Effect(first.a + second.a * mul, first.b + second.b * mul)
             elif self.operation == "*" or self.operation == "/":
                 if first.a != 0 and second.a != 0:
-                    raise BaseException(f"Cant do powers")
+                    raise Exception(f"Cant do powers")
                 if self.operation == "*":
                     if first.a != 0:
                         primary = first
@@ -69,15 +68,13 @@ class OperationMonkey():
                     else:
                         primary = second
                         secondary = first.b
-                    self.effect = Effect(
-                        primary.a * secondary, primary.b * secondary)
+                    self.effect = Effect(primary.a * secondary, primary.b * secondary)
                 else:
                     if second.a != 0:
-                        raise BaseException(f"Cant do powers")
-                    self.effect = Effect(
-                        first.a / second.b, first.b / second.b)
+                        raise Exception(f"Cant do powers")
+                    self.effect = Effect(first.a / second.b, first.b / second.b)
             else:
-                raise BaseException(f"Unknown operation {self.operation}")
+                raise Exception(f"Unknown operation {self.operation}")
         return self.effect
 
 

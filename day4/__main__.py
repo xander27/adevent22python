@@ -15,11 +15,12 @@ class Range:
         return self.include(other) or other.include(self)
 
     def overlap(self, other):
-        if self.begin <= other.begin and self.end >= other.begin:
+        if self.begin <= other.begin <= self.end:
             return True
-        if self.begin >= other.begin and self.begin <= other.end:
+        if other.begin <= self.begin <= other.end:
             return True
         return False
+
 
 def read_pairs(fname):
     norm_file_name = path.join(path.dirname(__file__), fname)
@@ -30,7 +31,7 @@ def read_pairs(fname):
 
 def line_to_pair(line):
     first, second = line.split(",")
-    return (range_from_string(first), range_from_string(second))
+    return range_from_string(first), range_from_string(second)
 
 
 def range_from_string(s):
@@ -47,7 +48,7 @@ def score_file(fname):
             part_2 += 1
         elif pair[0].overlap(pair[1]):
             part_2 += 1
-    return (part_1, part_2)
+    return part_1, part_2
 
 
 class TestDay(unittest.TestCase):

@@ -101,7 +101,7 @@ def find_total_small(dirs):
     return total_small
 
 
-def find_smalest_to_delete(dirs):
+def find_smallest_to_delete(dirs):
     total_space = 70000000
     free_needed = 30000000
     space_used = dirs["/"].calculate_size()
@@ -117,13 +117,13 @@ def find_smalest_to_delete(dirs):
             min_to_delete = size
 
     if min_to_delete == total_space:
-        raise BaseException("Can't find dicrectory to delete")
+        raise Exception("Can't find directory to delete")
     return min_to_delete
 
 
 def solve_file(fname):
     dirs = parse(read_lines(fname))
-    return (find_total_small(dirs), find_smalest_to_delete(dirs))
+    return find_total_small(dirs), find_smallest_to_delete(dirs)
 
 
 class TestDay(unittest.TestCase):
@@ -133,8 +133,7 @@ class TestDay(unittest.TestCase):
         self.assertEqual(actual["/a/e"], Dir("/a/e", File("i", 584)))
 
     def test_calculate_size(self):
-        actual = Dir("/a", File("i", 100), Dir("/a/e",
-                     File("x", 10), File("y", 20))).calculate_size()
+        actual = Dir("/a", File("i", 100), Dir("/a/e", File("x", 10), File("y", 20))).calculate_size()
         self.assertEqual(actual, 130)
 
     def test_solve(self):

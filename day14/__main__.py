@@ -1,12 +1,12 @@
-
 from dataclasses import dataclass
 from os import path
 import unittest
 
 START = (500, 0)
 
+
 @dataclass
-class Map():
+class Map:
     data: list[list[str]]
     max_x: int
     max_y: int
@@ -16,7 +16,7 @@ class Map():
         self.max_y = max_y
         self.data = []
         for _ in range(max_x + 1):
-            self.data.append(['.'] * (max_y+1))
+            self.data.append(['.'] * (max_y + 1))
 
     def __getitem__(self, key):
         return self.data[key[0]][key[1]]
@@ -30,41 +30,44 @@ class Map():
                 print(self.data[c][r], end="")
             print()
 
-def simulate_sand_falling(map):
+
+def simulate_sand_falling(m):
     i = 0
     while True:
-        if simulate_sand_path(map):
-            return i
-        i+=1
-
-def simulate_sand_on_floor(map):
-    i = 1
-    while True:
-        simulate_sand_path(map)
-        if map[START] == 'O':
+        if simulate_sand_path(m):
             return i
         i += 1
 
 
-def simulate_sand_path(map):
+def simulate_sand_on_floor(m):
+    i = 1
+    while True:
+        simulate_sand_path(m)
+        if m[START] == 'O':
+            return i
+        i += 1
+
+
+def simulate_sand_path(m):
     point = START
-    while True:   
+    while True:
         if point is None:
             return False
-        if point[1] == map.max_y:
+        if point[1] == m.max_y:
             return True
-        point = similate_sand_move(map, point[0], point[1])
+        point = simulate_sand_move(m, point[0], point[1])
 
 
-def similate_sand_move(map, x, y):
-    if map[x, y + 1]  == '.':
+def simulate_sand_move(map, x, y):
+    if map[x, y + 1] == '.':
         return x, y + 1
-    if x > 0 and map[x - 1, y + 1]  == '.':
+    if x > 0 and map[x - 1, y + 1] == '.':
         return x - 1, y + 1
-    if x < map.max_x and map[x + 1, y + 1]  == '.':
+    if x < map.max_x and map[x + 1, y + 1] == '.':
         return x + 1, y + 1
     map[x, y] = 'O'
     return None
+
 
 def read_commands(fname):
     result = []
@@ -91,20 +94,20 @@ def draw_line(map, p1, p2):
 
     if x1 == x2:
         begin, end = (y1, y2) if y2 > y1 else (y2, y1)
-        for y in range(begin, end+1):
+        for y in range(begin, end + 1):
             map[x1, y] = '#'
     elif y1 == y2:
         begin, end = (x1, x2) if x2 > x1 else (x2, x1)
-        for x in range(begin, end+1):
-            map[x,y1] = '#'
+        for x in range(begin, end + 1):
+            map[x, y1] = '#'
     else:
-        raise BaseException(f"Invalid line {p1}->{p2}")
+        raise Exception(f"Invalid line {p1}->{p2}")
 
 
-def apply_commands(map, commands):
+def apply_commands(m, commands):
     for command in commands:
         for p1, p2 in zip(command, command[1:]):
-            draw_line(map, p1, p2)
+            draw_line(m, p1, p2)
 
 
 def init_map(commands, floor):
@@ -124,7 +127,6 @@ def score_file(fname):
 
 
 class TestDay(unittest.TestCase):
-
     COMMANDS = [
         [(498, 4), (498, 6), (496, 6)],
         [(503, 4), (502, 4), (502, 9), (494, 9)]
