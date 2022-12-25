@@ -3,8 +3,6 @@ from os import path
 import re
 import unittest
 
-PARSING_EXP = "Valve ([A-Z]{2}) has flow rate=([0-9]+); tunnels? leads? to valves? (.*)"
-
 
 @dataclass
 class Valve:
@@ -12,57 +10,78 @@ class Valve:
     flow: int
     children: dict[str, int]
 
+    @staticmethod
+    def parse(string):
+        match = re.match("Valve ([A-Z]{2}) has flow rate=([0-9]+); tunnels? leads? to valves? (.*)", string)
+        return Valve(
+            match.group(1),
+            int(match.group(2)),
+            {s.strip(): 1 for s in match.group(3).split(",")}
+        )
 
-def parse_valve(string):
-    match = re.match(PARSING_EXP, string)
-    return Valve(
-        match.group(1),
-        int(match.group(2)),
-        {s.strip(): 1 for s in match.group(3).split(",")}
-    )
+
+def optimize_children_distance(valves):
+    for k, valve in valves.items():
+        for i in valves.keys():
+            for j in valves.keys():
+                current = valves[i].children.get(j, float("+inf"))
+                new = valves[i].children.get(k, float("+inf")) + valves[k].children.get(j, float("+inf"))
+                valves[i].children[j] = min(current, new)
+
+
+def remove_zero_flow(valves):
+    to_delete = {n for n, v in valves.items() if v.flow == 0}
+    result = {}
+    for name, valve in valves.items():
+        if name in to_delete:
+            continue
+        valve.children = {c: d for c, d in valve.children.items() if d < float("+inf") and c not in to_delete}
+        result[name] = valve
+    return result
+
+
+def optimize_valves(valves):
+    optimize_children_distance(valves)
+    return remove_zero_flow(valves)
 
 
 def find_way(valves, time):
-    not_broken = 0
-    for valve in valves.values():
-        if valve.flow > 0:
-            not_broken += 1
+    start = valves["AA"]
+    valves = optimize_valves(valves)
+    start.children = {c: n for c, n in start.children.items() if c in valves.keys()}
     return step(
         valves=valves,
-        cur="AA",
-        time=time - 1,
+        valve=start,
+        time=time,
         flow=0,
         opened=set(),
-        not_broken=not_broken,
         shortest=dict()
     )
 
 
-def step(valves, cur, time, flow, opened, not_broken, shortest):
-    if time == 0:
-        return flow
-    if len(opened) == not_broken:
+def step(valves, valve, time, flow, opened, shortest):
+    if len(opened) == len(valves):
         return flow
 
-    key = cur + ">" + ":".join(sorted(opened))
+    key = valve.name + ">" + ":".join(sorted(opened))
     if key in shortest and shortest[key] > time:
         return -1
     shortest[key] = time
 
-    m = 0
-    valve = valves[cur]
-    if cur not in opened and valve.flow > 0:
-        new_open = opened.copy()
-        new_open.add(cur)
-        new_flow = flow + valve.flow * time
-        result = step(valves, cur, time - 1, new_flow, new_open, not_broken, shortest)
-        if result > m:
-            m = result
+    m = flow
 
-    for child in valve.children:
-        result = step(valves, child, time - 1, flow, opened, not_broken, shortest)
-        if result > m:
-            m = result
+    for child_name, distance in valve.children.items():
+        if child_name in opened:
+            continue
+        child_valve = valves[child_name]
+        new_time = time - distance - 1
+        if new_time <= 0:
+            continue
+        new_flow = flow + new_time * child_valve.flow
+        new_open = opened.copy()
+        new_open.add(child_name)
+        result = step(valves, child_valve, new_time, new_flow, new_open, shortest)
+        m = max(result, m)
 
     return m
 
@@ -72,7 +91,7 @@ def read_valves(fname):
     norm_file_name = path.join(path.dirname(__file__), fname)
     with open(norm_file_name, "r", encoding="utf-8") as file:
         for line in file:
-            valve = parse_valve(line)
+            valve = Valve.parse(line)
             result[valve.name] = valve
     return result
 
@@ -83,7 +102,7 @@ def solve_file(fname):
 
 
 class TestDay(unittest.TestCase):
-    VALVES = {
+    RAW_VALVES = {
         "AA": Valve("AA", 0, {"DD": 1, "II": 1, "BB": 1}),
         "BB": Valve("BB", 13, {"CC": 1, "AA": 1}),
         "CC": Valve("CC", 2, {"DD": 1, "BB": 1}),
@@ -96,15 +115,24 @@ class TestDay(unittest.TestCase):
         "JJ": Valve("JJ", 21, {"II": 1})
     }
 
+    OPTIMIZED_VALVES = {
+        "BB": Valve("BB", 13, {'CC': 1, 'BB': 2, 'DD': 2, 'EE': 3, 'HH': 6, 'JJ': 3}),
+        "CC": Valve("CC", 2, {'DD': 1, 'BB': 1, 'CC': 2, 'EE': 2, 'HH': 5, 'JJ': 4}),
+        "DD": Valve("DD", 20, {'CC': 1, 'EE': 1, 'BB': 2, 'DD': 2, 'HH': 4, 'JJ': 3}),
+        "EE": Valve("EE", 3, {'DD': 1, 'BB': 3, 'CC': 2, 'EE': 2, 'HH': 3, 'JJ': 4}),
+        "HH": Valve("HH", 22, {'BB': 6, 'CC': 5, 'DD': 4, 'EE': 3, 'HH': 2, 'JJ': 7}),
+        "JJ": Valve("JJ", 21, {'BB': 3, 'CC': 4, 'DD': 3, 'EE': 4, 'HH': 7, 'JJ': 2})
+    }
+
     def test_parse_valve(self):
         text = "Valve II has flow rate=0; tunnels lead to valves AA, JJ"
-        self.assertEqual(parse_valve(text), Valve("II", 0, {"AA": 1, "JJ": 1}))
-
-    def test_read_valves(self):
-        self.assertEqual(read_valves("input-test.txt"), self.VALVES)
+        self.assertEqual(Valve.parse(text), Valve("II", 0, {"AA": 1, "JJ": 1}))
 
     def test_find_way(self):
-        self.assertEqual(find_way(self.VALVES, 30), 1651)
+        self.assertEqual(find_way(self.RAW_VALVES, 30), 1651)
+
+    def test_optimize_valves(self):
+        self.assertDictEqual(optimize_valves(self.RAW_VALVES), self.OPTIMIZED_VALVES)
 
     def test_solve_file(self):
         self.assertEqual(solve_file("input-test.txt"), 1651)
