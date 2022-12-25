@@ -20,6 +20,15 @@ class Valve:
         )
 
 
+@dataclass
+class State:
+    opened: set[str]
+    position: str
+
+    def __hash__(self):
+        return hash(self.position + ">" + ":".join(sorted(self.opened)))
+
+
 def optimize_children_distance(valves):
     for k, valve in valves.items():
         for i in valves.keys():
@@ -49,24 +58,19 @@ def find_way(valves, time):
     start = valves["AA"]
     valves = optimize_valves(valves)
     start.children = {c: n for c, n in start.children.items() if c in valves.keys()}
-    return step(
-        valves=valves,
-        valve=start,
-        time=time,
-        flow=0,
-        opened=set(),
-        shortest=dict()
-    )
+    best = dict()
+    return step(valves=valves, valve=start, time=time, flow=0, opened=set(), best=best), best
 
 
-def step(valves, valve, time, flow, opened, shortest):
+def step(valves, valve, time, flow, opened, best):
     if len(opened) == len(valves):
         return flow
 
-    key = valve.name + ">" + ":".join(sorted(opened))
-    if key in shortest and shortest[key] > time:
+    state = State(opened, valve.name)
+    pred = best.get(state, -1)
+    if pred >= flow:
         return -1
-    shortest[key] = time
+    best[state] = flow
 
     m = flow
 
@@ -80,7 +84,7 @@ def step(valves, valve, time, flow, opened, shortest):
         new_flow = flow + new_time * child_valve.flow
         new_open = opened.copy()
         new_open.add(child_name)
-        result = step(valves, child_valve, new_time, new_flow, new_open, shortest)
+        result = step(valves, child_valve, new_time, new_flow, new_open, best)
         m = max(result, m)
 
     return m
@@ -96,9 +100,32 @@ def read_valves(fname):
     return result
 
 
+def overlap(a, b):
+    for x in a:
+        if x in b:
+            return True
+    return False
+
+
+def solve_1(valves):
+    return find_way(valves, 30)[0]
+
+
+def solve_2(valves):
+    best = find_way(valves, 26)[1]
+    max_p2 = 0
+    items = list(best.items())
+    for i, a in enumerate(items):
+        for b in items[i+1:]:
+            if overlap(a[0].opened, b[0].opened):
+                continue
+            max_p2 = max(max_p2, a[1] + b[1])
+    return max_p2
+
+
 def solve_file(fname):
     valves = read_valves(fname)
-    return find_way(valves, 30)
+    return solve_1(valves), solve_2(valves)
 
 
 class TestDay(unittest.TestCase):
@@ -129,13 +156,13 @@ class TestDay(unittest.TestCase):
         self.assertEqual(Valve.parse(text), Valve("II", 0, {"AA": 1, "JJ": 1}))
 
     def test_find_way(self):
-        self.assertEqual(find_way(self.RAW_VALVES, 30), 1651)
+        self.assertEqual(find_way(self.RAW_VALVES, 30)[0], 1651)
 
     def test_optimize_valves(self):
         self.assertDictEqual(optimize_valves(self.RAW_VALVES), self.OPTIMIZED_VALVES)
 
     def test_solve_file(self):
-        self.assertEqual(solve_file("input-test.txt"), 1651)
+        self.assertEqual(solve_file("input-test.txt"), (1651, 1707))
 
 
 if __name__ == '__main__':
